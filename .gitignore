@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+build/
+.next/
+
+# Environment files (don't commit real .env)
+.env
+**/.env
+# But do commit .env.example
+!.env.example
+!**/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Docker volumes (if mounted locally)
+postgres_data/
+
+# Vite / build cache
+.vite/
+**/.vite/
