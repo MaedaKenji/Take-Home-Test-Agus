@@ -60,15 +60,28 @@ jobs:
             CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
             EOF
 
-            echo "🐳 Membangun ulang dan menjalankan container..."
-            docker compose down --remove-orphans
-            docker compose up -d --build
+            # Auto-fix: pastikan user punya akses Docker
+            echo "🔐 Memeriksa akses Docker..."
+            if ! docker info > /dev/null 2>&1; then
+              echo "⚠️  User belum di grup docker, menambahkan via sudo..."
+              sudo usermod -aG docker $USER
+              echo "✅ User ditambahkan ke grup docker"
+              # Jalankan docker compose dalam sesi group baru tanpa perlu re-login
+              echo "🐳 Membangun ulang dan menjalankan container..."
+              sudo docker compose down --remove-orphans
+              sudo docker compose up -d --build
+            else
+              echo "✅ Akses Docker OK"
+              echo "🐳 Membangun ulang dan menjalankan container..."
+              docker compose down --remove-orphans
+              docker compose up -d --build
+            fi
 
             echo "⏳ Menunggu container sehat..."
             sleep 15
 
             echo "✅ Status container:"
-            docker compose ps
+            docker compose ps || sudo docker compose ps
 
             echo "🎉 Deployment selesai!"
 
@@ -83,12 +96,13 @@ jobs:
           script: |
             echo "🏥 Menjalankan health check..."
             sleep 5
-            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/health || echo "000")
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health || echo "000")
             if [ "$RESPONSE" = "200" ]; then
               echo "✅ Health check LULUS — Aplikasi berjalan normal (HTTP $RESPONSE)"
             else
               echo "⚠️  Health check mendapat respons: HTTP $RESPONSE"
               echo "Memeriksa log backend..."
-              cd ~/pharmacy-app && docker compose logs --tail=30 backend
+              cd ~/pharmacy-app
+              docker compose logs --tail=30 backend 2>/dev/null || sudo docker compose logs --tail=30 backend
               exit 1
             fi
