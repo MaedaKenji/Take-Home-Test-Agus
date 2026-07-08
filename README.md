@@ -95,7 +95,7 @@ Take-Home-Test-Agus/
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/<username>/Take-Home-Test-Agus.git
+git clone https://github.com/MaedaKenji/Take-Home-Test-Agus.git
 cd Take-Home-Test-Agus
 ```
 

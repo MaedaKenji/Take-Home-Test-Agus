@@ -1,0 +1,88 @@
+name: 🚀 Deploy to VM
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  APP_DIR: ~/pharmacy-app
+
+jobs:
+  deploy:
+    name: Deploy via SSH
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy ke VM
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_PORT }}
+          script: |
+            set -e
+
+            echo "📁 Menyiapkan direktori aplikasi..."
+            mkdir -p ${{ env.APP_DIR }}
+            cd ${{ env.APP_DIR }}
+
+            # Clone jika belum ada, pull jika sudah ada
+            if [ ! -d ".git" ]; then
+              echo "📦 Clone repository..."
+              git clone https://github.com/${{ github.repository }}.git .
+            else
+              echo "🔄 Pull perubahan terbaru..."
+              git fetch origin
+              git reset --hard origin/main
+            fi
+
+            # Buat .env dari GitHub Secrets jika belum ada
+            echo "⚙️  Membuat file .env..."
+            cat > .env << 'ENVEOF'
+            DB_HOST=db
+            DB_PORT=5432
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            NODE_ENV=production
+            PORT=5000
+            CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
+            ENVEOF
+
+            echo "🐳 Membangun ulang dan menjalankan container..."
+            docker compose down --remove-orphans
+            docker compose up -d --build
+
+            echo "⏳ Menunggu container sehat..."
+            sleep 15
+
+            echo "✅ Status container:"
+            docker compose ps
+
+            echo "🎉 Deployment selesai!"
+
+      - name: 🔍 Health Check
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_PORT }}
+          script: |
+            echo "🏥 Menjalankan health check..."
+            sleep 5
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/health || echo "000")
+            if [ "$RESPONSE" = "200" ]; then
+              echo "✅ Health check LULUS — Aplikasi berjalan normal (HTTP $RESPONSE)"
+            else
+              echo "⚠️  Health check mendapat respons: HTTP $RESPONSE"
+              echo "Memeriksa log backend..."
+              cd ~/pharmacy-app && docker compose logs --tail=30 backend
+              exit 1
+            fi
