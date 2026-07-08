@@ -1,16 +1,24 @@
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import Typography from '@mui/material/Typography';
+
 export default function LoadingSpinner({ text = 'Memuat data...', fullPage = false }) {
-  if (fullPage) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', flexDirection: 'column', gap: 16 }}>
-        <div className="spinner" />
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>{text}</p>
-      </div>
-    );
-  }
   return (
-    <div className="loading-container">
-      <div className="spinner" />
-      <p>{text}</p>
-    </div>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: fullPage ? '60vh' : '200px',
+        flexDirection: 'column',
+        gap: 2,
+        py: 4,
+      }}
+    >
+      <CircularProgress size={40} thickness={4} />
+      <Typography variant="body2" color="text.secondary">
+        {text}
+      </Typography>
+    </Box>
   );
 }

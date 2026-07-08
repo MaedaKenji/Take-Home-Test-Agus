@@ -1,5 +1,34 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import TextField from '@mui/material/TextField';
+import IconButton from '@mui/material/IconButton';
+import Pagination from '@mui/material/Pagination';
+import Link from '@mui/material/Link';
+import { useSearchParams } from 'react-router-dom';
+
+// Material Icons
+import AddIcon from '@mui/icons-material/Add';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CancelIcon from '@mui/icons-material/Cancel';
+import ClearIcon from '@mui/icons-material/Clear';
+
 import { getOrders, deleteOrder, updateOrderStatus } from '../services/orderService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import StatusBadge from '../components/common/StatusBadge';
@@ -21,7 +50,6 @@ export default function OrdersPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
 
   const status = searchParams.get('status') || '';
   const date = searchParams.get('date') || '';
@@ -50,6 +78,12 @@ export default function OrdersPage() {
     setSearchParams(p);
   };
 
+  const handlePageChange = (event, value) => {
+    const p = new URLSearchParams(searchParams);
+    p.set('page', value);
+    setSearchParams(p);
+  };
+
   const handleDelete = async () => {
     setDeleteLoading(true);
     try {
@@ -71,96 +105,148 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="animate-fade-in">
-      <div className="page-header">
-        <div>
-          <h1>Order Obat</h1>
-          <p>{meta.total} order ditemukan</p>
-        </div>
-        <Link to="/orders/new" className="btn btn-primary">+ Buat Order</Link>
-      </div>
+    <Box className="animate-fade-in">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+        <Box>
+          <Typography variant="h1" sx={{ fontSize: '1.5rem', fontWeight: 700 }}>
+            Order Obat
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+            {meta.total} order ditemukan
+          </Typography>
+        </Box>
+        <Button
+          component={RouterLink}
+          to="/orders/new"
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+        >
+          Buat Order
+        </Button>
+      </Box>
 
-      <div className="card">
-        <div className="filter-bar">
-          <select className="form-control" style={{ width: 180 }} value={status} onChange={e => setParam('status', e.target.value)}>
-            {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
-          <input type="date" className="form-control" style={{ width: 180 }} value={date} onChange={e => setParam('date', e.target.value)} />
-          {(status || date) && (
-            <button className="btn btn-ghost btn-sm" onClick={() => setSearchParams({})}>✕ Reset Filter</button>
-          )}
-        </div>
+      <Card>
+        <CardContent sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <FormControl size="small" sx={{ width: 180 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={status}
+                label="Status"
+                onChange={e => setParam('status', e.target.value)}
+              >
+                {STATUSES.map(s => <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+            
+            <TextField
+              type="date"
+              size="small"
+              value={date}
+              onChange={e => setParam('date', e.target.value)}
+              sx={{ width: 180 }}
+            />
 
-        {loading ? <LoadingSpinner /> : (
-          <>
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>No. Order</th>
-                    <th>Poliklinik</th>
-                    <th>Tanggal Order</th>
-                    <th>Jumlah Item</th>
-                    <th>Dipesan Oleh</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.length === 0 ? (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40 }}>
-                      <div className="empty-state-icon">📋</div>
-                      <p style={{ color: 'var(--color-text-muted)' }}>Tidak ada order ditemukan</p>
-                    </td></tr>
-                  ) : orders.map(order => (
-                    <tr key={order.id}>
-                      <td data-label="No Order">
-                        <Link to={`/orders/${order.id}`} style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
-                          {order.orderNumber}
-                        </Link>
-                      </td>
-                      <td data-label="Poliklinik" style={{ fontWeight: 500 }}>{order.polyclinic}</td>
-                      <td data-label="Tanggal" className="text-muted">
-                        {new Date(order.orderDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </td>
-                      <td data-label="Jumlah Item">
-                        <span className="badge badge-info">{order.items?.length ?? 0} item</span>
-                      </td>
-                      <td data-label="Dipesan Oleh" className="text-muted">{order.requestedBy || '-'}</td>
-                      <td data-label="Status"><StatusBadge status={order.status} /></td>
-                      <td data-label="Aksi">
-                        <div className="flex gap-2">
-                          <Link to={`/orders/${order.id}`} className="btn btn-ghost btn-sm">👁️</Link>
-                          {order.status === 'pending' && (
-                            <Link to={`/orders/${order.id}/edit`} className="btn btn-secondary btn-sm">✏️</Link>
-                          )}
-                          {order.status === 'pending' && (
-                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteTarget(order)}>🗑️</button>
-                          )}
-                          {(order.status === 'pending' || order.status === 'processing') && (
-                            <button className="btn btn-ghost btn-sm" onClick={() => handleCancel(order)} title="Batalkan">✕</button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {meta.totalPages > 1 && (
-              <div className="pagination">
-                <button className="page-btn" disabled={page <= 1} onClick={() => setParam('page', page - 1)}>←</button>
-                {Array.from({ length: meta.totalPages }, (_, i) => i + 1).map(p => (
-                  <button key={p} className={`page-btn ${p === page ? 'active' : ''}`} onClick={() => setParam('page', String(p))}>{p}</button>
-                ))}
-                <button className="page-btn" disabled={page >= meta.totalPages} onClick={() => setParam('page', page + 1)}>→</button>
-              </div>
+            {(status || date) && (
+              <Button
+                variant="text"
+                size="small"
+                startIcon={<ClearIcon />}
+                onClick={() => setSearchParams({})}
+                color="inherit"
+              >
+                Reset Filter
+              </Button>
             )}
-          </>
-        )}
-      </div>
+          </Box>
+
+          {loading ? <LoadingSpinner /> : (
+            <>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>No. Order</TableCell>
+                      <TableCell>Poliklinik</TableCell>
+                      <TableCell>Tanggal Order</TableCell>
+                      <TableCell>Jumlah Item</TableCell>
+                      <TableCell>Dipesan Oleh</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Aksi</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {orders.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                            Tidak ada order ditemukan
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : orders.map(order => (
+                      <TableRow key={order.id} hover>
+                        <TableCell sx={{ fontWeight: 700 }}>
+                          <Link component={RouterLink} to={`/orders/${order.id}`} underline="hover">
+                            {order.orderNumber}
+                          </Link>
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 500 }}>{order.polyclinic}</TableCell>
+                        <TableCell sx={{ color: 'text.secondary' }}>
+                          {new Date(order.orderDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {order.items?.length ?? 0} item
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ color: 'text.secondary' }}>{order.requestedBy || '-'}</TableCell>
+                        <TableCell><StatusBadge status={order.status} /></TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            <IconButton size="small" component={RouterLink} to={`/orders/${order.id}`} title="Detail">
+                              <VisibilityIcon fontSize="small" />
+                            </IconButton>
+                            {order.status === 'pending' && (
+                              <IconButton size="small" component={RouterLink} to={`/orders/${order.id}/edit`} title="Edit">
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            )}
+                            {order.status === 'pending' && (
+                              <IconButton size="small" color="error" onClick={() => setDeleteTarget(order)} title="Hapus">
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            )}
+                            {(order.status === 'pending' || order.status === 'processing') && (
+                              <IconButton size="small" color="warning" onClick={() => handleCancel(order)} title="Batalkan">
+                                <CancelIcon fontSize="small" />
+                              </IconButton>
+                            )}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {/* Pagination */}
+              {meta.totalPages > 1 && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                  <Pagination
+                    count={meta.totalPages}
+                    page={page}
+                    onChange={handlePageChange}
+                    color="primary"
+                    shape="rounded"
+                  />
+                </Box>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <ConfirmDialog
         isOpen={!!deleteTarget}
@@ -171,6 +257,6 @@ export default function OrdersPage() {
         onCancel={() => setDeleteTarget(null)}
         loading={deleteLoading}
       />
-    </div>
+    </Box>
   );
 }

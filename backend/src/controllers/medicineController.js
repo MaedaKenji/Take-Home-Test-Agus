@@ -6,11 +6,24 @@ const AppError = require('../utils/AppError');
 // GET /api/medicines
 exports.getMedicines = async (req, res, next) => {
   try {
-    const { search, category, lowStock } = req.query;
+    const { search, category, status, lowStock } = req.query;
     const where = {};
     if (search) where.name = { [Op.iLike]: `%${search}%` };
     if (category) where.category = category;
-    if (lowStock === 'true') {
+    if (status) {
+      if (status === 'Tersedia') {
+        where.stock = { [Op.gt]: Medicine.sequelize.col('min_stock') };
+      } else if (status === 'Rendah') {
+        where.stock = {
+          [Op.and]: [
+            { [Op.gt]: 0 },
+            { [Op.lte]: Medicine.sequelize.col('min_stock') }
+          ]
+        };
+      } else if (status === 'Habis') {
+        where.stock = 0;
+      }
+    } else if (lowStock === 'true') {
       where[Op.and] = [
         { stock: { [Op.lte]: Medicine.sequelize.col('min_stock') } }
       ];

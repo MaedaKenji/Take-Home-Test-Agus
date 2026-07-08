@@ -146,11 +146,18 @@ exports.updateOrderItems = async (req, res, next) => {
   const t = await sequelize.transaction();
   try {
     const order = await Order.findByPk(req.params.id, {
-      include: [{ model: OrderItem, as: 'items', include: [{ model: Medicine, as: 'medicine' }] }],
       transaction: t,
       lock: true,
     });
     if (!order) throw new AppError(404, 'Order tidak ditemukan');
+
+    // Fetch items with medicine details separately under the transaction
+    const itemsList = await OrderItem.findAll({
+      where: { orderId: order.id },
+      include: [{ model: Medicine, as: 'medicine' }],
+      transaction: t,
+    });
+    order.items = itemsList;
     if (order.status !== 'processing') throw new AppError(400, 'Persetujuan jumlah hanya bisa dilakukan saat status processing');
 
     const { items } = req.body; // [{itemId, quantityApproved}]
@@ -184,12 +191,19 @@ exports.updateStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
     const order = await Order.findByPk(req.params.id, {
-      include: [{ model: OrderItem, as: 'items', include: [{ model: Medicine, as: 'medicine' }] }],
       transaction: t,
       lock: true,
     });
 
     if (!order) throw new AppError(404, 'Order tidak ditemukan');
+
+    // Fetch items with medicine details separately under the transaction
+    const itemsList = await OrderItem.findAll({
+      where: { orderId: order.id },
+      include: [{ model: Medicine, as: 'medicine' }],
+      transaction: t,
+    });
+    order.items = itemsList;
 
     const allowed = VALID_TRANSITIONS[order.status] || [];
     if (!allowed.includes(status)) {

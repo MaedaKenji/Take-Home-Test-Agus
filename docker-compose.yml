@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:latest
     container_name: pharmacy_db
     restart: unless-stopped
     environment:
@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${DB_USER:-pharmacy_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-securepassword123}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     ports:
       - "5432:5432"
     healthcheck:

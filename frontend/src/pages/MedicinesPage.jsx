@@ -1,4 +1,36 @@
 import { useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TextField from '@mui/material/TextField';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Chip from '@mui/material/Chip';
+import IconButton from '@mui/material/IconButton';
+import Grid from '@mui/material/Grid';
+import InputAdornment from '@mui/material/InputAdornment';
+
+// Material Icons
+import SearchIcon from '@mui/icons-material/Search';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+
 import { getMedicines, deleteMedicine, createMedicine, updateMedicine } from '../services/medicineService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ConfirmDialog from '../components/common/ConfirmDialog';
@@ -13,6 +45,7 @@ export default function MedicinesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -26,6 +59,7 @@ export default function MedicinesPage() {
       const params = {};
       if (search) params.search = search;
       if (filterCategory) params.category = filterCategory;
+      if (filterStatus) params.status = filterStatus;
       const res = await getMedicines(params);
       setMedicines(res.data.data);
     } finally {
@@ -33,7 +67,7 @@ export default function MedicinesPage() {
     }
   };
 
-  useEffect(() => { load(); }, [search, filterCategory]);
+  useEffect(() => { load(); }, [search, filterCategory, filterStatus]);
 
   const openCreate = () => { setForm(EMPTY_FORM); setEditTarget(null); setModalOpen(true); };
   const openEdit = (med) => { setForm({ code: med.code, name: med.name, unit: med.unit, stock: med.stock, minStock: med.minStock, category: med.category || '' }); setEditTarget(med); setModalOpen(true); };
@@ -71,140 +105,237 @@ export default function MedicinesPage() {
   };
 
   const getStockStatus = (med) => {
-    if (med.stock === 0) return { label: 'Habis', badge: 'badge-danger' };
-    if (med.stock <= med.minStock) return { label: 'Rendah', badge: 'badge-warning' };
-    return { label: 'Tersedia', badge: 'badge-success' };
+    if (med.stock === 0) return { label: 'Habis', color: 'error' };
+    if (med.stock <= med.minStock) return { label: 'Rendah', color: 'warning' };
+    return { label: 'Tersedia', color: 'success' };
   };
 
   return (
-    <div className="animate-fade-in">
-      <div className="page-header">
-        <div>
-          <h1>Manajemen Obat</h1>
-          <p>{medicines.length} obat ditemukan</p>
-        </div>
-        <button className="btn btn-primary" onClick={openCreate}>+ Tambah Obat</button>
-      </div>
+    <Box className="animate-fade-in">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+        <Box>
+          <Typography variant="h1" sx={{ fontSize: '1.5rem', fontWeight: 700 }}>
+            Manajemen Obat
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+            {medicines.length} obat ditemukan
+          </Typography>
+        </Box>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+          Tambah Obat
+        </Button>
+      </Box>
 
-      <div className="card">
-        <div className="filter-bar">
-          <div className="search-input-wrap">
-            <span className="search-icon">🔍</span>
-            <input
-              className="form-control"
+      <Card>
+        <CardContent sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+            <TextField
+              size="small"
               placeholder="Cari nama obat..."
               value={search}
               onChange={e => setSearch(e.target.value)}
+              sx={{ flexGrow: 1, minWidth: 200 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon size="small" />
+                  </InputAdornment>
+                ),
+              }}
             />
-          </div>
-          <select className="form-control" style={{ width: 180 }} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-            <option value="">Semua Kategori</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
+            <FormControl size="small" sx={{ width: 180 }}>
+              <InputLabel>Semua Kategori</InputLabel>
+              <Select
+                value={filterCategory}
+                label="Semua Kategori"
+                onChange={e => setFilterCategory(e.target.value)}
+              >
+                <MenuItem value="">Semua Kategori</MenuItem>
+                {CATEGORIES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+              </Select>
+            </FormControl>
 
-        {loading ? <LoadingSpinner /> : (
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Kode</th>
-                  <th>Nama Obat</th>
-                  <th>Kategori</th>
-                  <th>Satuan</th>
-                  <th>Stok</th>
-                  <th>Min. Stok</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {medicines.length === 0 ? (
-                  <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}>
-                    <div className="empty-state-icon">💊</div>
-                    <p style={{ color: 'var(--color-text-muted)' }}>Tidak ada data obat</p>
-                  </td></tr>
-                ) : medicines.map(med => {
-                  const status = getStockStatus(med);
-                  return (
-                    <tr key={med.id}>
-                      <td data-label="Kode"><code style={{ fontSize: 12, background: 'var(--color-surface-2)', padding: '2px 6px', borderRadius: 4 }}>{med.code}</code></td>
-                      <td data-label="Nama" style={{ fontWeight: 600 }}>{med.name}</td>
-                      <td data-label="Kategori" className="text-muted">{med.category || '-'}</td>
-                      <td data-label="Satuan">{med.unit}</td>
-                      <td data-label="Stok" style={{ fontWeight: 700, color: med.stock === 0 ? 'var(--color-danger)' : med.stock <= med.minStock ? 'var(--color-warning)' : 'var(--color-success)' }}>
-                        {med.stock}
-                      </td>
-                      <td data-label="Min Stok" className="text-muted">{med.minStock}</td>
-                      <td data-label="Status"><span className={`badge ${status.badge}`}>{status.label}</span></td>
-                      <td data-label="Aksi">
-                        <div className="flex gap-2">
-                          <button className="btn btn-ghost btn-sm" onClick={() => openEdit(med)}>✏️ Edit</button>
-                          <button className="btn btn-danger btn-sm" onClick={() => setDeleteTarget(med)}>🗑️</button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+            <FormControl size="small" sx={{ width: 180 }}>
+              <InputLabel>Semua Status</InputLabel>
+              <Select
+                value={filterStatus}
+                label="Semua Status"
+                onChange={e => setFilterStatus(e.target.value)}
+              >
+                <MenuItem value="">Semua Status</MenuItem>
+                <MenuItem value="Tersedia">Tersedia</MenuItem>
+                <MenuItem value="Rendah">Stok Rendah</MenuItem>
+                <MenuItem value="Habis">Habis</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
 
-      {/* Modal Form */}
-      {modalOpen && (
-        <div className="modal-overlay" onClick={() => setModalOpen(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">{editTarget ? 'Edit Obat' : 'Tambah Obat Baru'}</h3>
-              <button className="btn btn-ghost btn-icon" onClick={() => setModalOpen(false)}>✕</button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label className="form-label required">Kode Obat</label>
-                    <input className="form-control" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="Contoh: MED-001" required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label required">Nama Obat</label>
-                    <input className="form-control" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nama lengkap obat" required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label required">Satuan</label>
-                    <select className="form-control" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} required>
-                      <option value="">Pilih satuan</option>
-                      {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Kategori</label>
-                    <select className="form-control" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                      <option value="">Pilih kategori</option>
-                      {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label required">Stok</label>
-                    <input type="number" className="form-control" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} min="0" required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Stok Minimum</label>
-                    <input type="number" className="form-control" value={form.minStock} onChange={e => setForm(f => ({ ...f, minStock: e.target.value }))} min="0" />
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Batal</button>
-                <button type="submit" className="btn btn-primary" disabled={formLoading}>
-                  {formLoading ? 'Menyimpan...' : editTarget ? 'Simpan Perubahan' : 'Tambah Obat'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+          {loading ? <LoadingSpinner /> : (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Kode</TableCell>
+                    <TableCell>Nama Obat</TableCell>
+                    <TableCell>Kategori</TableCell>
+                    <TableCell>Satuan</TableCell>
+                    <TableCell>Stok</TableCell>
+                    <TableCell>Min. Stok</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Aksi</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {medicines.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                        <Typography variant="body1" sx={{ color: 'text.secondary', mb: 1 }}>
+                          Tidak ada data obat
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : medicines.map(med => {
+                    const status = getStockStatus(med);
+                    return (
+                      <TableRow key={med.id} hover>
+                        <TableCell>
+                          <Box
+                            component="code"
+                            sx={{
+                              fontSize: 12,
+                              bgcolor: 'action.selected',
+                              color: 'text.secondary',
+                              px: '6px',
+                              py: '2px',
+                              borderRadius: 1,
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            {med.code}
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>{med.name}</TableCell>
+                        <TableCell sx={{ color: 'text.secondary' }}>{med.category || '-'}</TableCell>
+                        <TableCell>{med.unit}</TableCell>
+                        <TableCell sx={{ fontWeight: 700, color: med.stock === 0 ? 'error.main' : med.stock <= med.minStock ? 'warning.main' : 'success.main' }}>
+                          {med.stock}
+                        </TableCell>
+                        <TableCell sx={{ color: 'text.secondary' }}>{med.minStock}</TableCell>
+                        <TableCell>
+                          <Chip label={status.label} color={status.color} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <IconButton size="small" onClick={() => openEdit(med)} title="Edit">
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton size="small" color="error" onClick={() => setDeleteTarget(med)} title="Hapus">
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modal Form Dialog */}
+      <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {editTarget ? 'Edit Obat' : 'Tambah Obat Baru'}
+          <IconButton onClick={() => setModalOpen(false)}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <form onSubmit={handleSubmit}>
+          <DialogContent dividers sx={{ p: 3 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Kode Obat"
+                  size="small"
+                  value={form.code}
+                  onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
+                  placeholder="Contoh: MED-001"
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Nama Obat"
+                  size="small"
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Nama lengkap obat"
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>Satuan</InputLabel>
+                  <Select
+                    value={form.unit}
+                    label="Satuan"
+                    onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
+                  >
+                    <MenuItem value="">Pilih satuan</MenuItem>
+                    {UNITS.map(u => <MenuItem key={u} value={u}>{u}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Kategori</InputLabel>
+                  <Select
+                    value={form.category}
+                    label="Kategori"
+                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                  >
+                    <MenuItem value="">Pilih kategori</MenuItem>
+                    {CATEGORIES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Stok"
+                  size="small"
+                  value={form.stock}
+                  onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
+                  inputProps={{ min: 0 }}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Stok Minimum"
+                  size="small"
+                  value={form.minStock}
+                  onChange={e => setForm(f => ({ ...f, minStock: e.target.value }))}
+                  inputProps={{ min: 0 }}
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setModalOpen(false)} color="inherit">Batal</Button>
+            <Button type="submit" variant="contained" disabled={formLoading}>
+              {formLoading ? 'Menyimpan...' : editTarget ? 'Simpan Perubahan' : 'Tambah Obat'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
 
       <ConfirmDialog
         isOpen={!!deleteTarget}
@@ -215,6 +346,6 @@ export default function MedicinesPage() {
         onCancel={() => setDeleteTarget(null)}
         loading={deleteLoading}
       />
-    </div>
+    </Box>
   );
 }

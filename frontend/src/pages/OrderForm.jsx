@@ -1,5 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import IconButton from '@mui/material/IconButton';
+import Grid from '@mui/material/Grid';
+
+// Material Icons
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from '@mui/icons-material/Save';
+
 import { getMedicines } from '../services/medicineService';
 import { createOrder, updateOrder, getOrderById } from '../services/orderService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -85,105 +104,161 @@ export default function OrderForm() {
   if (pageLoading) return <LoadingSpinner fullPage />;
 
   return (
-    <div className="animate-fade-in" style={{ maxWidth: 900, margin: '0 auto' }}>
-      <div className="page-header">
-        <div>
-          <h1>{isEdit ? 'Edit Order' : 'Buat Order Baru'}</h1>
-          <p>{isEdit ? 'Ubah data pesanan obat' : 'Tambah pesanan obat dari poliklinik'}</p>
-        </div>
-        <button className="btn btn-secondary" onClick={() => navigate(-1)}>← Kembali</button>
-      </div>
+    <Box className="animate-fade-in" sx={{ maxWidth: 940, mx: 'auto' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h1" sx={{ fontSize: '1.5rem', fontWeight: 700 }}>
+            {isEdit ? 'Edit Order' : 'Buat Order Baru'}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+            {isEdit ? 'Ubah data pesanan obat' : 'Tambah pesanan obat dari poliklinik'}
+          </Typography>
+        </Box>
+        <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>
+          Kembali
+        </Button>
+      </Box>
 
       <form onSubmit={handleSubmit}>
         {/* Info Order */}
-        <div className="card" style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📝 Informasi Order</h2>
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label required">Poliklinik / Unit Pemesan</label>
-              <select className={`form-control ${errors.polyclinic ? 'is-invalid' : ''}`} value={form.polyclinic} onChange={e => setForm(f => ({ ...f, polyclinic: e.target.value }))} required>
-                <option value="">Pilih poliklinik</option>
-                {POLYCLINICS.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-              {errors.polyclinic && <p className="form-error">{errors.polyclinic}</p>}
-            </div>
-            <div className="form-group">
-              <label className="form-label required">Tanggal Order</label>
-              <input type="date" className={`form-control ${errors.orderDate ? 'is-invalid' : ''}`} value={form.orderDate} onChange={e => setForm(f => ({ ...f, orderDate: e.target.value }))} required />
-              {errors.orderDate && <p className="form-error">{errors.orderDate}</p>}
-            </div>
-            <div className="form-group">
-              <label className="form-label">Dipesan Oleh</label>
-              <input className="form-control" value={form.requestedBy} onChange={e => setForm(f => ({ ...f, requestedBy: e.target.value }))} placeholder="Nama petugas poli" />
-            </div>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-              <label className="form-label">Catatan</label>
-              <textarea className="form-control" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Catatan tambahan (opsional)" rows={2} />
-            </div>
-          </div>
-        </div>
+        <Card sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h3" sx={{ fontSize: '1rem', fontWeight: 700, mb: 2.5 }}>
+              Informasi Order
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <FormControl fullWidth size="small" required error={!!errors.polyclinic}>
+                  <InputLabel id="polyclinic-select-label">Poliklinik / Unit</InputLabel>
+                  <Select
+                    fullWidth
+                    labelId="polyclinic-select-label"
+                    value={form.polyclinic}
+                    label="Poliklinik / Unit"
+                    onChange={e => setForm(f => ({ ...f, polyclinic: e.target.value }))}
+                  >
+                    <MenuItem value="">Pilih poliklinik / unit</MenuItem>
+                    {POLYCLINICS.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
+                  </Select>
+                  {errors.polyclinic && <Typography variant="caption" color="error">{errors.polyclinic}</Typography>}
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 3 }}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Tanggal Order"
+                  size="small"
+                  value={form.orderDate}
+                  onChange={e => setForm(f => ({ ...f, orderDate: e.target.value }))}
+                  required
+                  error={!!errors.orderDate}
+                  helperText={errors.orderDate}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 5 }}>
+                <TextField
+                  fullWidth
+                  label="Dipesan Oleh"
+                  size="small"
+                  value={form.requestedBy}
+                  onChange={e => setForm(f => ({ ...f, requestedBy: e.target.value }))}
+                  placeholder="Nama petugas poli"
+                />
+              </Grid>
+              <Grid size={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={10}
+                  label="Catatan"
+                  value={form.notes}
+                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="Catatan tambahan (opsional)"
+                  sx={{ '& textarea': { resize: 'none' } }}
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
         {/* Items */}
-        <div className="card" style={{ marginBottom: 20 }}>
-          <div className="flex justify-between items-center" style={{ marginBottom: 16 }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700 }}>💊 Daftar Obat yang Dipesan</h2>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={addItem}>+ Tambah Obat</button>
-          </div>
-          {errors.items && <p className="form-error" style={{ marginBottom: 10 }}>{errors.items}</p>}
+        <Card sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h3" sx={{ fontSize: '1rem', fontWeight: 700 }}>
+                Daftar Obat yang Dipesan
+              </Typography>
+              <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={addItem}>
+                Tambah Obat
+              </Button>
+            </Box>
+            {errors.items && <Typography variant="body2" color="error" sx={{ mb: 2 }}>{errors.items}</Typography>}
 
-          <div className="order-item-list">
-            {items.map((item, idx) => (
-              <div key={idx} className="order-item-row">
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Pilih Obat</label>
-                  <select
-                    className={`form-control ${errors[`item_${idx}_med`] ? 'is-invalid' : ''}`}
-                    value={item.medicineId}
-                    onChange={e => updateItem(idx, 'medicineId', e.target.value)}
-                  >
-                    <option value="">-- Pilih obat --</option>
-                    {medicines.map(m => (
-                      <option key={m.id} value={m.id} disabled={m.stock === 0}>
-                        {getMedicineLabel(m)}
-                      </option>
-                    ))}
-                  </select>
-                  {errors[`item_${idx}_med`] && <p className="form-error">{errors[`item_${idx}_med`]}</p>}
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Jumlah</label>
-                  <input
-                    type="number"
-                    className={`form-control ${errors[`item_${idx}_qty`] ? 'is-invalid' : ''}`}
-                    value={item.quantityRequested}
-                    min="1"
-                    onChange={e => updateItem(idx, 'quantityRequested', parseInt(e.target.value) || 1)}
-                  />
-                  {errors[`item_${idx}_qty`] && <p className="form-error">{errors[`item_${idx}_qty`]}</p>}
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-danger btn-icon-sm"
-                  onClick={() => removeItem(idx)}
-                  disabled={items.length === 1}
-                  title="Hapus item"
-                  style={{ marginTop: 22 }}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {items.map((item, idx) => (
+                <Grid container spacing={2} key={idx} alignItems="center">
+                  <Grid size={{ xs: 12, sm: 8 }}>
+                    <FormControl fullWidth size="small" required error={!!errors[`item_${idx}_med`]}>
+                      <InputLabel id={`medicine-select-label-${idx}`}>Pilih Obat</InputLabel>
+                      <Select
+                        fullWidth
+                        labelId={`medicine-select-label-${idx}`}
+                        value={item.medicineId}
+                        label="Pilih Obat"
+                        onChange={e => updateItem(idx, 'medicineId', e.target.value)}
+                      >
+                        <MenuItem value="">Pilih obat</MenuItem>
+                        {medicines.map(m => (
+                          <MenuItem key={m.id} value={m.id} disabled={m.stock === 0}>
+                            {getMedicineLabel(m)}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {errors[`item_${idx}_med`] && <Typography variant="caption" color="error">{errors[`item_${idx}_med`]}</Typography>}
+                    </FormControl>
+                  </Grid>
+                  <Grid size={{ xs: 10, sm: 3 }}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Jumlah"
+                      size="small"
+                      value={item.quantityRequested}
+                      onChange={e => updateItem(idx, 'quantityRequested', parseInt(e.target.value) || 1)}
+                      inputProps={{ min: 1 }}
+                      required
+                      error={!!errors[`item_${idx}_qty`]}
+                      helperText={errors[`item_${idx}_qty`]}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 2, sm: 1 }} sx={{ display: 'flex', justifyContent: 'center' }}>
+                    <IconButton
+                      color="error"
+                      onClick={() => removeItem(idx)}
+                      disabled={items.length === 1}
+                      title="Hapus item"
+                      sx={{ mt: { xs: 0, sm: 0.5 } }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Grid>
+                </Grid>
+              ))}
+            </Box>
+          </CardContent>
+        </Card>
 
-        {/* Submit */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-          <button type="button" className="btn btn-secondary" onClick={() => navigate(-1)}>Batal</button>
-          <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
-            {loading ? 'Menyimpan...' : isEdit ? '💾 Simpan Perubahan' : '📝 Buat Order'}
-          </button>
-        </div>
+        {/* Submit Actions */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+          <Button variant="outlined" onClick={() => navigate(-1)}>
+            Batal
+          </Button>
+          <Button type="submit" variant="contained" size="large" startIcon={<SaveIcon />} disabled={loading}>
+            {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Buat Order'}
+          </Button>
+        </Box>
       </form>
-    </div>
+    </Box>
   );
 }
