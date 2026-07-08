@@ -20,7 +20,7 @@ jobs:
     steps:
       # 1. Checkout kode terbaru
       - name: 📥 Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       # 2. SSH ke VM dan deploy dengan Docker Compose
       - name: 🚀 Deploy ke VM

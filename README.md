@@ -65,7 +65,7 @@ Take-Home-Test-Agus/
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Runtime:** Node.js 20
+- **Runtime:** Node.js 24 LTS (v24.18.0)
 - **Framework:** Express.js 5
 - **ORM:** Sequelize 6
 - **Database:** PostgreSQL 17
@@ -82,6 +82,7 @@ Take-Home-Test-Agus/
 
 ### DevOps
 - **Containerization:** Docker + Docker Compose
+- **CI/CD:** GitHub Actions (deploy via SSH + git pull)
 - **Proxy:** Nginx (reverse proxy untuk API dan static files)
 
 ---
