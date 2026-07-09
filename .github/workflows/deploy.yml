@@ -97,13 +97,13 @@ jobs:
           script: |
             echo "🏥 Menjalankan health check..."
             sleep 5
-            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health || echo "000")
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/health || echo "000")
             if [ "$RESPONSE" = "200" ]; then
               echo "✅ Health check LULUS — Aplikasi berjalan normal (HTTP $RESPONSE)"
             else
               echo "⚠️  Health check mendapat respons: HTTP $RESPONSE"
               echo "Memeriksa log backend..."
-              cd ~/pharmacy-app
+              cd ${{ env.APP_DIR }}
               docker compose logs --tail=30 backend 2>/dev/null || sudo docker compose logs --tail=30 backend
               exit 1
             fi

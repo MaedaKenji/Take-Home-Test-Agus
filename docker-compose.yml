@@ -1,16 +1,16 @@
 services:
   db:
     image: postgres:14.23-alpine3.24
-    container_name: pharmacy_db
+    container_name: pharmacy_db_staging
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-pharmacy_db}
       POSTGRES_USER: ${DB_USER:-pharmacy_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-securepassword123}
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_data_staging:/var/lib/postgresql
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-pharmacy_user} -d ${DB_NAME:-pharmacy_db}" ]
       interval: 5s
@@ -33,7 +33,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-securepassword123}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
     ports:
-      - "5000:5000"
+      - "5001:5000"
     depends_on:
       db:
         condition: service_healthy
@@ -51,7 +51,7 @@ services:
     container_name: pharmacy_frontend_staging
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -60,11 +60,11 @@ services:
     image: cloudflare/cloudflared:1885-86fccede6d14
     container_name: pharmacy_cloudflared_staging
     restart: unless-stopped
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN_STAGING}
 
 volumes:
-  postgres_data:
+  postgres_data_staging:
 
 networks:
   default:
-    name: pharmacy_network
+    name: pharmacy_network_staging
