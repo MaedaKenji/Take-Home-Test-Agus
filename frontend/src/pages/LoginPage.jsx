@@ -18,6 +18,30 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+
+const loginDarkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#0ea5e9',
+      dark: '#0284c7',
+      contrastText: '#ffffff',
+    },
+    background: {
+      default: '#0a0f1e',
+      paper: '#111827',
+    },
+    text: {
+      primary: '#f1f5f9',
+      secondary: '#94a3b8',
+    },
+  },
+  shape: {
+    borderRadius: 8,
+  },
+});
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -38,47 +62,49 @@ export default function LoginPage() {
       login(token, user);
       toast.success(`Selamat datang, ${user.displayName || user.username}!`);
       navigate('/', { replace: true });
-    } catch {
-      // error handled by interceptor
+    } catch (err) {
+      const message = err.response?.data?.message || 'Username atau password salah';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #0a0f1e 0%, #111827 50%, #0a0f1e 100%)',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Decorative gradient orbs */}
-      <Box sx={{
-        position: 'absolute', top: '15%', left: '10%', width: 300, height: 300,
-        background: 'radial-gradient(circle, rgba(14,165,233,0.15) 0%, transparent 70%)',
-        borderRadius: '50%', filter: 'blur(40px)',
-      }} />
-      <Box sx={{
-        position: 'absolute', bottom: '15%', right: '10%', width: 250, height: 250,
-        background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)',
-        borderRadius: '50%', filter: 'blur(40px)',
-      }} />
+    <ThemeProvider theme={loginDarkTheme}>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #0a0f1e 0%, #111827 50%, #0a0f1e 100%)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Decorative gradient orbs */}
+        <Box sx={{
+          position: 'absolute', top: '15%', left: '10%', width: 300, height: 300,
+          background: 'radial-gradient(circle, rgba(14,165,233,0.15) 0%, transparent 70%)',
+          borderRadius: '50%', filter: 'blur(40px)',
+        }} />
+        <Box sx={{
+          position: 'absolute', bottom: '15%', right: '10%', width: 250, height: 250,
+          background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)',
+          borderRadius: '50%', filter: 'blur(40px)',
+        }} />
 
-      <Card sx={{
-        width: '100%',
-        maxWidth: 420,
-        mx: 2,
-        background: 'rgba(17, 24, 39, 0.85)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
-      }}>
-        <CardContent sx={{ p: 4 }}>
+        <Card sx={{
+          width: '100%',
+          maxWidth: 420,
+          mx: 2,
+          background: 'rgba(17, 24, 39, 0.85)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
+        }}>
+          <CardContent sx={{ p: 4 }}>
           {/* Logo */}
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
             <Box sx={{
@@ -194,5 +220,6 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </Box>
+  </ThemeProvider>
   );
 }

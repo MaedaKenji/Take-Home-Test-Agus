@@ -26,7 +26,8 @@ api.interceptors.response.use(
     if (status === 401) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
-      if (window.location.pathname !== '/login') {
+      const isLoginPage = window.location.pathname.endsWith('/login') || window.location.pathname.endsWith('/login/');
+      if (!isLoginPage) {
         window.location.href = '/login';
       }
       return Promise.reject(error);

@@ -35,3 +35,21 @@ html {
 }
 
 .animate-fade-in { animation: fadeIn 0.3s ease; }
+
+/* =====================
+   Autofill Overrides (Dark Mode & Password Managers)
+   ===================== */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 100px #111827 inset !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+input:autofill {
+  background-color: #111827 !important;
+  color: #f1f5f9 !important;
+}
+

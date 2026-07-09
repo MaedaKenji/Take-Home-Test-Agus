@@ -27,6 +27,9 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
 import Tooltip from '@mui/material/Tooltip';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
 
 // Material Icons
 import SearchIcon from '@mui/icons-material/Search';
@@ -38,7 +41,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 import { getMedicines, deleteMedicine, createMedicine, updateMedicine } from '../services/medicineService';
-import { getCategories, createCategory } from '../services/categoryService';
+import { getCategories, createCategory, deleteCategory } from '../services/categoryService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import toast from 'react-hot-toast';
@@ -164,12 +167,24 @@ export default function MedicinesPage() {
       toast.success(`Kategori "${newCatName.trim()}" ditambahkan`);
       setForm(f => ({ ...f, category: newCatName.trim() }));
       setNewCatName('');
-      setAddCatOpen(false);
       loadCategories();
     } catch {
       // handled by interceptor
     } finally {
       setAddCatLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (catName) => {
+    try {
+      await deleteCategory(catName);
+      toast.success(`Kategori "${catName}" berhasil dihapus`);
+      if (form.category === catName) {
+        setForm(f => ({ ...f, category: '' }));
+      }
+      loadCategories();
+    } catch {
+      // error handled by interceptor
     }
   };
 
@@ -374,9 +389,6 @@ export default function MedicinesPage() {
                       <MenuItem key={u} value={u}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {u}
-                          {LIQUID_UNITS.includes(u) && (
-                            <Chip label="Cair" size="small" color="info" sx={{ height: 18, fontSize: 10 }} />
-                          )}
                         </Box>
                       </MenuItem>
                     ))}
@@ -464,35 +476,80 @@ export default function MedicinesPage() {
         </form>
       </Dialog>
 
-      {/* Add Category Dialog */}
+      {/* Manajemen Kategori Dialog */}
       <Dialog open={addCatOpen} onClose={() => setAddCatOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          Tambah Kategori Baru
+        <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Manajemen Kategori
           <IconButton size="small" onClick={() => setAddCatOpen(false)}><CloseIcon /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 1 }}>
-          <TextField
-            fullWidth
-            autoFocus
-            label="Nama Kategori"
-            size="small"
-            value={newCatName}
-            onChange={e => setNewCatName(e.target.value)}
-            placeholder="Contoh: Hormonal"
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCategory(); } }}
-            sx={{ mt: 1 }}
-          />
+        <DialogContent dividers sx={{ p: 2 }}>
+          {/* Form Tambah */}
+          <Box sx={{ display: 'flex', gap: 1, mb: 3, alignItems: 'center' }}>
+            <TextField
+              fullWidth
+              label="Nama Kategori Baru"
+              size="small"
+              value={newCatName}
+              onChange={e => setNewCatName(e.target.value)}
+              placeholder="Contoh: Hormonal"
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCategory(); } }}
+            />
+            <Button
+              variant="contained"
+              onClick={handleAddCategory}
+              disabled={addCatLoading || !newCatName.trim()}
+              startIcon={addCatLoading ? <CircularProgress size={14} /> : <AddIcon />}
+              sx={{ flexShrink: 0 }}
+            >
+              {addCatLoading ? '...' : 'Tambah'}
+            </Button>
+          </Box>
+
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary' }}>
+            Daftar Kategori Saat Ini ({categories.length})
+          </Typography>
+          <Divider />
+
+          {/* List Kategori dengan scrollable */}
+          <List dense sx={{ maxHeight: 240, overflowY: 'auto', mt: 1 }}>
+            {categories.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 2 }}>
+                Belum ada kategori
+              </Typography>
+            ) : (
+              categories.map((c) => (
+                <ListItem
+                  key={c}
+                  secondaryAction={
+                    <Tooltip title={`Hapus kategori "${c}"`}>
+                      <IconButton
+                        edge="end"
+                        aria-label="delete"
+                        size="small"
+                        color="error"
+                        onClick={() => handleDeleteCategory(c)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  }
+                  sx={{
+                    borderRadius: 1,
+                    '&:hover': { bgcolor: 'action.hover' },
+                    mb: 0.5,
+                  }}
+                >
+                  <ListItemText
+                    primary={c}
+                    primaryTypographyProps={{ style: { fontSize: '0.875rem', fontWeight: 500 } }}
+                  />
+                </ListItem>
+              ))
+            )}
+          </List>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setAddCatOpen(false)} color="inherit">Batal</Button>
-          <Button
-            variant="contained"
-            onClick={handleAddCategory}
-            disabled={addCatLoading || !newCatName.trim()}
-            startIcon={addCatLoading ? <CircularProgress size={14} /> : <AddIcon />}
-          >
-            {addCatLoading ? 'Menambah...' : 'Tambah'}
-          </Button>
+          <Button onClick={() => setAddCatOpen(false)} variant="outlined">Selesai</Button>
         </DialogActions>
       </Dialog>
 

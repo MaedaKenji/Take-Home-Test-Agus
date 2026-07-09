@@ -139,7 +139,7 @@ export default function OrderForm() {
   if (pageLoading) return <LoadingSpinner fullPage />;
 
   return (
-    <Box className="animate-fade-in" sx={{ maxWidth: 940, mx: 'auto' }}>
+    <Box className="animate-fade-in" sx={{ maxWidth: 940, mx: 'auto', pb: 32 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h1" sx={{ fontSize: '1.5rem', fontWeight: 700 }}>
@@ -236,6 +236,18 @@ export default function OrderForm() {
                           getOptionLabel={(opt) => opt ? `${opt.name} (${opt.unit})` : ''}
                           isOptionEqualToValue={(opt, val) => opt.id === val?.id}
                           getOptionDisabled={(opt) => opt.stock === 0}
+                          disablePortal
+                          slotProps={{
+                            popper: {
+                              placement: 'bottom-start',
+                              modifiers: [
+                                {
+                                  name: 'flip',
+                                  enabled: false,
+                                },
+                              ],
+                            },
+                          }}
                           filterOptions={(opts, { inputValue }) => {
                             const q = inputValue.toLowerCase();
                             return opts.filter(o =>
@@ -270,30 +282,31 @@ export default function OrderForm() {
                               </Box>
                             </Box>
                           )}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              label="Cari Obat"
-                              size="small"
-                              required
-                              error={!!errors[`item_${idx}_med`]}
-                              helperText={errors[`item_${idx}_med`] || (selectedMed ? `Stok: ${selectedMed.stock} ${selectedMed.unit}` : 'Ketik nama atau kode obat')}
-                              placeholder="Ketik nama, kode, atau kategori..."
-                              slotProps={{
-                                input: {
-                                  ...params.InputProps,
+                          renderInput={(params) => {
+                            const { InputProps, ...restParams } = params;
+                            return (
+                              <TextField
+                                {...restParams}
+                                label="Cari Obat"
+                                size="small"
+                                required
+                                error={!!errors[`item_${idx}_med`]}
+                                helperText={errors[`item_${idx}_med`] || (selectedMed ? `Stok: ${selectedMed.stock} ${selectedMed.unit}` : 'Ketik nama atau kode obat')}
+                                placeholder="Ketik nama, kode, atau kategori..."
+                                InputProps={{
+                                  ...InputProps,
                                   startAdornment: (
                                     <>
                                       {selectedMed && selectedMed.stock <= selectedMed.minStock && selectedMed.stock > 0 && (
                                         <WarningAmberIcon sx={{ color: 'warning.main', fontSize: 18, mr: 0.5 }} />
                                       )}
-                                      {params.InputProps.startAdornment}
+                                      {InputProps?.startAdornment}
                                     </>
                                   ),
-                                }
-                              }}
-                            />
-                          )}
+                                }}
+                              />
+                            );
+                          }}
                           noOptionsText="Obat tidak ditemukan"
                           loadingText="Memuat..."
                         />

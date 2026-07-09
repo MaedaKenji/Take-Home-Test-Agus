@@ -56,7 +56,7 @@ export default function Dashboard() {
       setStats(statsRes.data.data);
       setRecentOrders(ordersRes.data.data);
       setLowStockMeds(lowStockRes.data.data);
-      
+
       const now = new Date();
       setLastUpdated(now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB');
     } catch (err) {
@@ -75,47 +75,47 @@ export default function Dashboard() {
   if (loading) return <LoadingSpinner fullPage />;
 
   const STAT_CARDS = [
-    { 
-      icon: <ReceiptLongIcon />, 
-      label: 'Order Hari Ini', 
-      value: stats?.orders?.total ?? 0, 
-      color: 'info.main', 
-      bgColor: 'rgba(59, 130, 246, 0.12)' 
+    {
+      icon: <ReceiptLongIcon />,
+      label: 'Order Hari Ini',
+      value: stats?.orders?.total ?? 0,
+      color: 'info.main',
+      bgColor: 'rgba(59, 130, 246, 0.12)'
     },
-    { 
-      icon: <HourglassEmptyIcon />, 
-      label: 'Menunggu', 
-      value: stats?.orders?.pending ?? 0, 
-      color: 'warning.main', 
-      bgColor: 'rgba(245, 158, 11, 0.12)' 
+    {
+      icon: <HourglassEmptyIcon />,
+      label: 'Menunggu',
+      value: stats?.orders?.pending ?? 0,
+      color: 'warning.main',
+      bgColor: 'rgba(245, 158, 11, 0.12)'
     },
-    { 
-      icon: <AutorenewIcon />, 
-      label: 'Sedang Diproses', 
-      value: stats?.orders?.processing ?? 0, 
-      color: 'primary.main', 
-      bgColor: 'rgba(14, 165, 233, 0.12)' 
+    {
+      icon: <AutorenewIcon />,
+      label: 'Sedang Diproses',
+      value: stats?.orders?.processing ?? 0,
+      color: 'primary.main',
+      bgColor: 'rgba(14, 165, 233, 0.12)'
     },
-    { 
-      icon: <CheckCircleIcon />, 
-      label: 'Selesai Hari Ini', 
-      value: stats?.orders?.completed ?? 0, 
-      color: 'success.main', 
-      bgColor: 'rgba(34, 197, 94, 0.12)' 
+    {
+      icon: <CheckCircleIcon />,
+      label: 'Selesai Hari Ini',
+      value: stats?.orders?.completed ?? 0,
+      color: 'success.main',
+      bgColor: 'rgba(34, 197, 94, 0.12)'
     },
-    { 
-      icon: <MedicationIcon />, 
-      label: 'Total Jenis Obat', 
-      value: stats?.medicines?.total ?? 0, 
-      color: 'secondary.main', 
-      bgColor: 'rgba(99, 102, 241, 0.12)' 
+    {
+      icon: <MedicationIcon />,
+      label: 'Total Jenis Obat',
+      value: stats?.medicines?.total ?? 0,
+      color: 'secondary.main',
+      bgColor: 'rgba(99, 102, 241, 0.12)'
     },
-    { 
-      icon: <WarningIcon />, 
-      label: 'Stok Kritis', 
-      value: stats?.medicines?.lowStock ?? 0, 
-      color: 'error.main', 
-      bgColor: 'rgba(239, 68, 68, 0.12)' 
+    {
+      icon: <WarningIcon />,
+      label: 'Stok Kritis',
+      value: stats?.medicines?.lowStock ?? 0,
+      color: 'error.main',
+      bgColor: 'rgba(239, 68, 68, 0.12)'
     },
   ];
 
@@ -128,7 +128,7 @@ export default function Dashboard() {
   const getProgressInfo = (stock, minStock) => {
     if (minStock <= 0) return { pct: 100, color: '#22c55e', label: 'Aman' };
     const pct = Math.round(Math.min((stock / minStock) * 100, 100));
-    
+
     if (stock === 0) return { pct, color: '#ef4444', label: 'Habis' };
     if (pct <= 25) return { pct, color: '#ef4444', label: 'Kritis' };
     if (pct <= 50) return { pct, color: '#f97316', label: 'Sangat Rendah' };
@@ -160,18 +160,18 @@ export default function Dashboard() {
         <Alert
           severity="error"
           icon={<WarningIcon sx={{ color: '#fff' }} />}
-          sx={{ 
-            mb: 3, 
+          sx={{
+            mb: 3,
             borderRadius: '12px',
             bgcolor: 'error.main',
             color: '#fff',
             boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)',
-            '& .MuiAlert-message': { 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between', 
-              width: '100%', 
-              flexWrap: 'wrap', 
+            '& .MuiAlert-message': {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              flexWrap: 'wrap',
               gap: 2,
               p: 0
             },
@@ -189,8 +189,8 @@ export default function Dashboard() {
             size="small"
             component={RouterLink}
             to="/medicines?lowStock=true"
-            sx={{ 
-              color: 'error.main', 
+            sx={{
+              color: 'error.main',
               fontWeight: 800,
               bgcolor: 'common.white',
               borderRadius: '8px',
@@ -199,7 +199,7 @@ export default function Dashboard() {
               textTransform: 'none',
               boxShadow: 'none',
               minHeight: '36px',
-              '&:hover': { 
+              '&:hover': {
                 bgcolor: 'rgba(255,255,255,0.9)',
                 boxShadow: 'none'
               }
@@ -214,9 +214,9 @@ export default function Dashboard() {
       <Grid container spacing={2.5} sx={{ mb: 4 }}>
         {STAT_CARDS.map((s, i) => (
           <Grid item xs={12} sm={4} md={2} key={i}>
-            <Card 
-              sx={{ 
-                height: '100%', 
+            <Card
+              sx={{
+                height: '100%',
                 borderRadius: '12px',
                 border: '1px solid',
                 borderColor: 'divider',
@@ -316,10 +316,10 @@ export default function Dashboard() {
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%', borderRadius: '12px', border: '1px solid', borderColor: 'divider', boxShadow: 'none', display: 'flex', flexDirection: 'column' }}>
+          <Card sx={{ height: '600px', borderRadius: '12px', border: '1px solid', borderColor: 'divider', boxShadow: 'none', display: 'flex', flexDirection: 'column' }}>
             <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
-                <Typography variant="h6" sx={{ fontSize: '1.05rem', fontWeight: 800, color: 'text.primary' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5, flexWrap: 'wrap', gap: 1 }}>
+                <Typography variant="h6" sx={{ fontSize: '1.05rem', fontWeight: 800, color: 'text.primary', mr: 1 }}>
                   Order Terbaru
                 </Typography>
                 <Button
@@ -328,11 +328,12 @@ export default function Dashboard() {
                   variant="outlined"
                   size="small"
                   endIcon={<ArrowForwardIcon />}
-                  sx={{ 
-                    fontSize: '0.75rem', 
-                    borderRadius: '8px', 
+                  sx={{
+                    fontSize: '0.75rem',
+                    borderRadius: '8px',
                     fontWeight: 700,
-                    textTransform: 'none'
+                    textTransform: 'none',
+                    flexShrink: 0
                   }}
                 >
                   Lihat Semua
@@ -357,7 +358,7 @@ export default function Dashboard() {
                     variant="contained"
                     color="primary"
                     startIcon={<AddIcon />}
-                    sx={{ 
+                    sx={{
                       borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 700,
@@ -370,7 +371,7 @@ export default function Dashboard() {
                   </Button>
                 </Box>
               ) : (
-                <TableContainer sx={{ flexGrow: 1 }}>
+                <TableContainer sx={{ flexGrow: 1, overflowY: 'auto', maxHeight: '490px', pr: 1.5 }}>
                   <Table size="small">
                     <TableHead>
                       <TableRow>
@@ -410,9 +411,9 @@ export default function Dashboard() {
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%', borderRadius: '12px', border: '1px solid', borderColor: 'divider', boxShadow: 'none' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+          <Card sx={{ height: '600px', borderRadius: '12px', border: '1px solid', borderColor: 'divider', boxShadow: 'none', display: 'flex', flexDirection: 'column' }}>
+            <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', mb: 2.5, gap: 5.3 }}>
                 <Typography variant="h6" sx={{ fontSize: '1.05rem', fontWeight: 800, color: 'text.primary' }}>
                   Obat Stok Rendah
                 </Typography>
@@ -422,11 +423,12 @@ export default function Dashboard() {
                   variant="outlined"
                   size="small"
                   endIcon={<ArrowForwardIcon />}
-                  sx={{ 
-                    fontSize: '0.75rem', 
-                    borderRadius: '8px', 
+                  sx={{
+                    fontSize: '0.75rem',
+                    borderRadius: '8px',
                     fontWeight: 700,
-                    textTransform: 'none'
+                    textTransform: 'none',
+                    flexShrink: 0
                   }}
                 >
                   Semua
@@ -435,15 +437,15 @@ export default function Dashboard() {
 
               {/* Empty state (replaced emoji with MUI ShieldIcon) */}
               {sortedLowStockMeds.length === 0 ? (
-                <Box sx={{ py: 6, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ py: 6, flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 2 }}>
                   <ShieldIcon sx={{ fontSize: '3rem', color: 'success.main' }} />
                   <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                     Semua stok aman
                   </Typography>
                 </Box>
               ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {sortedLowStockMeds.slice(0, 5).map((med) => {
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1, overflowY: 'auto', pr: 2.5, maxHeight: '490px' }}>
+                  {sortedLowStockMeds.slice(0, 15).map((med) => {
                     const info = getProgressInfo(med.stock, med.minStock);
                     return (
                       <Box
@@ -468,9 +470,9 @@ export default function Dashboard() {
                           <Chip
                             label={info.label}
                             size="small"
-                            sx={{ 
-                              fontWeight: 800, 
-                              fontSize: '0.68rem', 
+                            sx={{
+                              fontWeight: 800,
+                              fontSize: '0.68rem',
                               borderRadius: '6px',
                               height: '22px',
                               bgcolor: `${info.color}15`,
@@ -480,7 +482,7 @@ export default function Dashboard() {
                             }}
                           />
                         </Box>
-                        
+
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                           <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
                             Stok: <strong>{med.stock}</strong> / {med.minStock} {med.unit}
@@ -489,12 +491,12 @@ export default function Dashboard() {
                             {info.pct}%
                           </Typography>
                         </Box>
-                        
+
                         <LinearProgress
                           variant="determinate"
                           value={info.pct}
-                          sx={{ 
-                            height: 8, 
+                          sx={{
+                            height: 8,
                             borderRadius: 4,
                             bgcolor: 'action.selected',
                             '& .MuiLinearProgress-bar': {
@@ -526,9 +528,9 @@ export default function Dashboard() {
               variant="contained"
               color="primary"
               startIcon={<AddIcon />}
-              sx={{ 
-                borderRadius: '8px', 
-                fontWeight: 700, 
+              sx={{
+                borderRadius: '8px',
+                fontWeight: 700,
                 textTransform: 'none',
                 minHeight: '42px',
                 px: 3,
@@ -544,9 +546,9 @@ export default function Dashboard() {
               variant="contained"
               color="secondary"
               startIcon={<MedicationIcon />}
-              sx={{ 
-                borderRadius: '8px', 
-                fontWeight: 700, 
+              sx={{
+                borderRadius: '8px',
+                fontWeight: 700,
                 textTransform: 'none',
                 minHeight: '42px',
                 px: 3,
@@ -562,9 +564,9 @@ export default function Dashboard() {
               variant="outlined"
               color="warning"
               startIcon={<ListIcon />}
-              sx={{ 
-                borderRadius: '8px', 
-                fontWeight: 700, 
+              sx={{
+                borderRadius: '8px',
+                fontWeight: 700,
                 textTransform: 'none',
                 minHeight: '42px',
                 px: 3
@@ -578,9 +580,9 @@ export default function Dashboard() {
               variant="outlined"
               color="info"
               startIcon={<LoopIcon />}
-              sx={{ 
-                borderRadius: '8px', 
-                fontWeight: 700, 
+              sx={{
+                borderRadius: '8px',
+                fontWeight: 700,
                 textTransform: 'none',
                 minHeight: '42px',
                 px: 3

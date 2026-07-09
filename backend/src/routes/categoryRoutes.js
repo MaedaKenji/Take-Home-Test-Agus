@@ -33,4 +33,16 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+// DELETE /api/categories/:name
+router.delete('/:name', async (req, res, next) => {
+  try {
+    const { name } = req.params;
+    const deletedCount = await Category.destroy({ where: { name } });
+    if (!deletedCount) throw new AppError(404, 'Kategori tidak ditemukan');
+    res.json({ success: true, message: `Kategori "${name}" berhasil dihapus` });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
