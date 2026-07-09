@@ -1,28 +1,74 @@
-name: 🚀 Deploy to VM
+name: 🚀 Build & Deploy via Docker Registry
 
 on:
   push:
     branches:
       - main
       - staging
-  workflow_dispatch:   # Bisa dipicu manual dari GitHub UI
+  workflow_dispatch:
 
 jobs:
   # ─────────────────────────────────────────────
-  # JOB 1: Deploy ke VM via SSH
+  # JOB 1: Build & Push Images to Docker Registry
+  # ─────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Set Environment Variables
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=staging" >> $GITHUB_ENV
+          fi
+          # Gunakan secret DOCKER_USERNAME atau default ke github owner lowercase
+          echo "REGISTRY_USER=${{ secrets.DOCKER_USERNAME || github.repository_owner }}" >> $GITHUB_ENV
+
+      - name: 🔑 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 📦 Build & Push Backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY_USER }}/pharmacy-backend:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 📦 Build & Push Frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY_USER }}/pharmacy-frontend:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────
+  # JOB 2: Deploy to VM via SSH (Pull & Run)
   # ─────────────────────────────────────────────
   deploy:
-    name: Deploy via SSH
+    name: Deploy to VM
+    needs: build-and-push
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Checkout kode terbaru
       - name: 📥 Checkout repository
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v4
 
-      # 2. Tentukan target environment & setting variable
       - name: 🛠️ Set Environment Variables
-        id: setup_env
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "ENV_NAME=production" >> $GITHUB_ENV
@@ -30,26 +76,26 @@ jobs:
             echo "RESET_BRANCH=main" >> $GITHUB_ENV
             echo "HEALTH_PORT=5000" >> $GITHUB_ENV
             echo "COMPOSE_FILES=-f docker-compose.yml" >> $GITHUB_ENV
-            echo "TUNNEL_TOKEN_SECRET_NAME=CLOUDFLARE_TUNNEL_TOKEN" >> $GITHUB_ENV
             echo "DB_HOST_PORT=5432" >> $GITHUB_ENV
             echo "REDIS_HOST_PORT=6379" >> $GITHUB_ENV
             echo "BACKEND_HOST_PORT=5000" >> $GITHUB_ENV
             echo "FRONTEND_HOST_PORT=80" >> $GITHUB_ENV
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
           else
             echo "ENV_NAME=staging" >> $GITHUB_ENV
             echo "APP_DIR=~/pharmacy-app-staging" >> $GITHUB_ENV
             echo "RESET_BRANCH=staging" >> $GITHUB_ENV
             echo "HEALTH_PORT=5001" >> $GITHUB_ENV
             echo "COMPOSE_FILES=-f docker-compose.yml -f docker-compose.staging.yml" >> $GITHUB_ENV
-            echo "TUNNEL_TOKEN_SECRET_NAME=CLOUDFLARE_TUNNEL_TOKEN_STAGING" >> $GITHUB_ENV
             echo "DB_HOST_PORT=5433" >> $GITHUB_ENV
             echo "REDIS_HOST_PORT=6380" >> $GITHUB_ENV
             echo "BACKEND_HOST_PORT=5001" >> $GITHUB_ENV
             echo "FRONTEND_HOST_PORT=8080" >> $GITHUB_ENV
+            echo "IMAGE_TAG=staging" >> $GITHUB_ENV
           fi
+          echo "DOCKER_REGISTRY_USER=${{ secrets.DOCKER_USERNAME || github.repository_owner }}" >> $GITHUB_ENV
 
-      # 3. SSH ke VM dan deploy dengan Docker Compose
-      - name: 🚀 Deploy ke VM
+      - name: 🚀 Pull & Run on VM via SSH
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.VM_HOST }}
@@ -75,7 +121,6 @@ jobs:
 
             # Buat .env dari GitHub Secrets
             echo "⚙️  Membuat file .env..."
-            # Resolving Cloudflare token dynamically based on target env
             if [ "${{ env.ENV_NAME }}" = "production" ]; then
               TUNNEL_TOKEN="${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}"
             else
@@ -89,6 +134,8 @@ jobs:
             REDIS_HOST_PORT=${{ env.REDIS_HOST_PORT }}
             BACKEND_HOST_PORT=${{ env.BACKEND_HOST_PORT }}
             FRONTEND_HOST_PORT=${{ env.FRONTEND_HOST_PORT }}
+            IMAGE_TAG=${{ env.IMAGE_TAG }}
+            DOCKER_REGISTRY_USER=${{ env.DOCKER_REGISTRY_USER }}
             DB_NAME=${{ secrets.DB_NAME }}
             DB_USER=${{ secrets.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
@@ -100,32 +147,25 @@ jobs:
             REDIS_URL=redis://redis:6379
             EOF
 
-            # Auto-fix: pastikan user punya akses Docker
-            echo "🔐 Memeriksa akses Docker..."
-            if ! docker info > /dev/null 2>&1; then
-              echo "⚠️  User belum di grup docker, menambahkan via sudo..."
-              sudo usermod -aG docker $USER
-              echo "✅ User ditambahkan ke grup docker"
-              # Jalankan docker compose dalam sesi group baru tanpa perlu re-login
-              echo "🐳 Membangun ulang dan menjalankan container..."
-              sudo docker compose ${{ env.COMPOSE_FILES }} down --remove-orphans
-              sudo docker compose ${{ env.COMPOSE_FILES }} up -d --build
-            else
-              echo "✅ Akses Docker OK"
-              echo "🐳 Membangun ulang dan menjalankan container..."
-              docker compose ${{ env.COMPOSE_FILES }} down --remove-orphans
-              docker compose ${{ env.COMPOSE_FILES }} up -d --build
-            fi
+            # Login ke registry di VM agar bisa pull
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin 2>/dev/null || true
+
+            echo "🐳 Menarik image terbaru dari Docker Hub..."
+            docker compose ${{ env.COMPOSE_FILES }} pull
+
+            echo "🐳 Membangun ulang dan menjalankan container..."
+            docker compose ${{ env.COMPOSE_FILES }} down --remove-orphans
+            docker compose ${{ env.COMPOSE_FILES }} up -d
 
             echo "⏳ Menunggu container sehat..."
             sleep 15
 
             echo "✅ Status container:"
-            docker compose ${{ env.COMPOSE_FILES }} ps || sudo docker compose ${{ env.COMPOSE_FILES }} ps
+            docker compose ${{ env.COMPOSE_FILES }} ps
 
             echo "🎉 Deployment selesai!"
 
-      # 4. Verifikasi health check aplikasi
+      # 3. Verifikasi health check aplikasi
       - name: 🔍 Health Check
         uses: appleboy/ssh-action@v1.2.5
         with:
@@ -143,6 +183,6 @@ jobs:
               echo "⚠️  Health check mendapat respons: HTTP $RESPONSE"
               echo "Memeriksa log backend..."
               cd ${{ env.APP_DIR }}
-              docker compose ${{ env.COMPOSE_FILES }} logs --tail=30 backend 2>/dev/null || sudo docker compose ${{ env.COMPOSE_FILES }} logs --tail=30 backend
+              docker compose ${{ env.COMPOSE_FILES }} logs --tail=30 backend
               exit 1
             fi

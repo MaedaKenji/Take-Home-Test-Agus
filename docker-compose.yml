@@ -33,6 +33,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: ${DOCKER_REGISTRY_USER:-maedakenji}/pharmacy-backend:${IMAGE_TAG:-latest}
     container_name: pharmacy_backend
     restart: unless-stopped
     environment:
@@ -64,6 +65,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: ${DOCKER_REGISTRY_USER:-maedakenji}/pharmacy-frontend:${IMAGE_TAG:-latest}
     container_name: pharmacy_frontend
     restart: unless-stopped
     ports:
