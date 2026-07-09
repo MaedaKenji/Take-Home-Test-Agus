@@ -1,9 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import { ColorModeProvider } from './context/ColorModeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Layout/Sidebar';
 import Navbar from './components/Layout/Navbar';
 import Dashboard from './pages/Dashboard';
@@ -11,7 +12,38 @@ import MedicinesPage from './pages/MedicinesPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderForm from './pages/OrderForm';
 import OrderDetailPage from './pages/OrderDetailPage';
+import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
+
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+function AppLayout() {
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <Sidebar />
+      <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: '100vh', minWidth: 0, marginLeft: { xs: 0, md: '260px' } }}>
+        <Navbar />
+        <Box component="main" sx={{ flexGrow: 1, minWidth: 0, p: { xs: 2, md: 4 } }}>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/medicines" element={<MedicinesPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/new" element={<OrderForm />} />
+            <Route path="/orders/:id/edit" element={<OrderForm />} />
+            <Route path="/orders/:id" element={<OrderDetailPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
 
 function AppContent() {
   const theme = useTheme();
@@ -19,23 +51,17 @@ function AppContent() {
 
   return (
     <BrowserRouter>
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        <Sidebar />
-        <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: '100vh', minWidth: 0, marginLeft: { xs: 0, md: '260px' } }}>
-          <Navbar />
-          <Box component="main" sx={{ flexGrow: 1, minWidth: 0, p: { xs: 2, md: 4 } }}>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/medicines" element={<MedicinesPage />} />
-              <Route path="/orders" element={<OrdersPage />} />
-              <Route path="/orders/new" element={<OrderForm />} />
-              <Route path="/orders/:id/edit" element={<OrderForm />} />
-              <Route path="/orders/:id" element={<OrderDetailPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Box>
-        </Box>
-      </Box>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
       <Toaster
         position="top-right"
         toastOptions={{
@@ -57,10 +83,12 @@ function AppContent() {
 
 function App() {
   return (
-    <ColorModeProvider>
-      <CssBaseline />
-      <AppContent />
-    </ColorModeProvider>
+    <AuthProvider>
+      <ColorModeProvider>
+        <CssBaseline />
+        <AppContent />
+      </ColorModeProvider>
+    </AuthProvider>
   );
 }
 

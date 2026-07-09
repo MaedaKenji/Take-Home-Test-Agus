@@ -21,6 +21,12 @@ const Medicine = sequelize.define('Medicine', {
     type: DataTypes.STRING(50),
     allowNull: false,
   },
+  // For liquid medicines: custom volume per unit (e.g. 100 for "100ml per botol")
+  unitValue: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    field: 'unit_value',
+  },
   stock: {
     type: DataTypes.INTEGER,
     allowNull: false,

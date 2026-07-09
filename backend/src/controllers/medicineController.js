@@ -6,10 +6,13 @@ const AppError = require('../utils/AppError');
 // GET /api/medicines
 exports.getMedicines = async (req, res, next) => {
   try {
-    const { search, category, status, lowStock } = req.query;
+    const { search, category, status, lowStock, unit, page, limit } = req.query;
     const where = {};
+
     if (search) where.name = { [Op.iLike]: `%${search}%` };
     if (category) where.category = category;
+    if (unit) where.unit = unit;
+
     if (status) {
       if (status === 'Tersedia') {
         where.stock = { [Op.gt]: Medicine.sequelize.col('min_stock') };
@@ -28,8 +31,33 @@ exports.getMedicines = async (req, res, next) => {
         { stock: { [Op.lte]: Medicine.sequelize.col('min_stock') } }
       ];
     }
-    const medicines = await Medicine.findAll({ where, order: [['name', 'ASC']] });
-    res.json({ success: true, data: medicines });
+
+    // Pagination
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 0; // 0 = no limit (used by OrderForm)
+
+    const queryOptions = {
+      where,
+      order: [['name', 'ASC']],
+    };
+
+    if (limitNum > 0) {
+      queryOptions.limit = limitNum;
+      queryOptions.offset = (pageNum - 1) * limitNum;
+    }
+
+    const { count, rows } = await Medicine.findAndCountAll(queryOptions);
+
+    res.json({
+      success: true,
+      data: rows,
+      meta: {
+        total: count,
+        page: pageNum,
+        limit: limitNum || count,
+        totalPages: limitNum > 0 ? Math.ceil(count / limitNum) : 1,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -52,6 +80,19 @@ exports.getLowStockMedicines = async (req, res, next) => {
   }
 };
 
+// GET /api/medicines/units — distinct units
+exports.getUnits = async (req, res, next) => {
+  try {
+    const units = await Medicine.findAll({
+      attributes: [[Medicine.sequelize.fn('DISTINCT', Medicine.sequelize.col('unit')), 'unit']],
+      order: [['unit', 'ASC']],
+    });
+    res.json({ success: true, data: units.map(m => m.unit) });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // GET /api/medicines/:id
 exports.getMedicineById = async (req, res, next) => {
   try {
@@ -66,8 +107,8 @@ exports.getMedicineById = async (req, res, next) => {
 // POST /api/medicines
 exports.createMedicine = async (req, res, next) => {
   try {
-    const { code, name, unit, stock, minStock, category } = req.body;
-    const medicine = await Medicine.create({ code, name, unit, stock, minStock, category });
+    const { code, name, unit, unitValue, stock, minStock, category } = req.body;
+    const medicine = await Medicine.create({ code, name, unit, unitValue: unitValue || null, stock, minStock, category });
     res.status(201).json({ success: true, message: 'Obat berhasil ditambahkan', data: medicine });
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError') {
@@ -82,8 +123,8 @@ exports.updateMedicine = async (req, res, next) => {
   try {
     const medicine = await Medicine.findByPk(req.params.id);
     if (!medicine) throw new AppError(404, 'Obat tidak ditemukan');
-    const { code, name, unit, stock, minStock, category } = req.body;
-    await medicine.update({ code, name, unit, stock, minStock, category });
+    const { code, name, unit, unitValue, stock, minStock, category } = req.body;
+    await medicine.update({ code, name, unit, unitValue: unitValue || null, stock, minStock, category });
     res.json({ success: true, message: 'Obat berhasil diupdate', data: medicine });
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError') {

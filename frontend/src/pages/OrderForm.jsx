@@ -12,12 +12,16 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 import Grid from '@mui/material/Grid';
+import Autocomplete from '@mui/material/Autocomplete';
+import Chip from '@mui/material/Chip';
 
 // Material Icons
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 import { getMedicines } from '../services/medicineService';
 import { createOrder, updateOrder, getOrderById } from '../services/orderService';
@@ -30,7 +34,9 @@ const POLYCLINICS = [
   'Poli Ortopedi', 'IGD', 'Rawat Inap Lantai 1', 'Rawat Inap Lantai 2', 'ICU',
 ];
 
-const EMPTY_ITEM = { medicineId: '', quantityRequested: 1, notes: '' };
+const LIQUID_UNITS = ['ml', 'mg', 'cc'];
+
+const EMPTY_ITEM = { medicineId: '', medicine: null, quantityRequested: 1, customVolume: '', notes: '' };
 
 export default function OrderForm() {
   const { id } = useParams();
@@ -58,14 +64,30 @@ export default function OrderForm() {
       getOrderById(id).then(r => {
         const o = r.data.data;
         setForm({ polyclinic: o.polyclinic, orderDate: o.orderDate, notes: o.notes || '', requestedBy: o.requestedBy || '' });
-        setItems(o.items.map(i => ({ medicineId: i.medicineId, quantityRequested: i.quantityRequested, notes: i.notes || '' })));
+        setItems(o.items.map(i => ({
+          medicineId: i.medicineId,
+          medicine: i.medicine,
+          quantityRequested: i.quantityRequested,
+          customVolume: '',
+          notes: i.notes || '',
+        })));
       }).finally(() => setPageLoading(false));
     }
   }, [id]);
 
   const addItem = () => setItems(prev => [...prev, { ...EMPTY_ITEM }]);
   const removeItem = (idx) => setItems(prev => prev.filter((_, i) => i !== idx));
-  const updateItem = (idx, key, val) => setItems(prev => prev.map((item, i) => i === idx ? { ...item, [key]: val } : item));
+
+  const updateItem = (idx, key, val) =>
+    setItems(prev => prev.map((item, i) => i === idx ? { ...item, [key]: val } : item));
+
+  const handleMedicineSelect = (idx, med) => {
+    setItems(prev => prev.map((item, i) =>
+      i === idx ? { ...item, medicineId: med ? med.id : '', medicine: med } : item
+    ));
+  };
+
+  const isLiquid = (unit) => LIQUID_UNITS.includes(unit?.toLowerCase());
 
   const validate = () => {
     const e = {};
@@ -85,7 +107,15 @@ export default function OrderForm() {
     if (!validate()) return;
     setLoading(true);
     try {
-      const payload = { ...form, items };
+      const payload = {
+        ...form,
+        items: items.map(item => ({
+          medicineId: item.medicineId,
+          quantityRequested: item.quantityRequested,
+          notes: item.notes,
+          ...(item.customVolume ? { customVolume: parseFloat(item.customVolume) } : {}),
+        })),
+      };
       if (isEdit) {
         await updateOrder(id, payload);
         toast.success('Order berhasil diupdate');
@@ -99,7 +129,12 @@ export default function OrderForm() {
     }
   };
 
-  const getMedicineLabel = (med) => `${med.name} (${med.unit}) — Stok: ${med.stock}`;
+  const getStockColor = (med) => {
+    if (!med) return 'text.secondary';
+    if (med.stock === 0) return 'error.main';
+    if (med.stock <= med.minStock) return 'warning.main';
+    return 'success.main';
+  };
 
   if (pageLoading) return <LoadingSpinner fullPage />;
 
@@ -145,22 +180,15 @@ export default function OrderForm() {
               </Grid>
               <Grid size={{ xs: 12, sm: 3 }}>
                 <TextField
-                  fullWidth
-                  type="date"
-                  label="Tanggal Order"
-                  size="small"
+                  fullWidth type="date" label="Tanggal Order" size="small"
                   value={form.orderDate}
                   onChange={e => setForm(f => ({ ...f, orderDate: e.target.value }))}
-                  required
-                  error={!!errors.orderDate}
-                  helperText={errors.orderDate}
+                  required error={!!errors.orderDate} helperText={errors.orderDate}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 5 }}>
                 <TextField
-                  fullWidth
-                  label="Dipesan Oleh"
-                  size="small"
+                  fullWidth label="Dipesan Oleh" size="small"
                   value={form.requestedBy}
                   onChange={e => setForm(f => ({ ...f, requestedBy: e.target.value }))}
                   placeholder="Nama petugas poli"
@@ -168,14 +196,10 @@ export default function OrderForm() {
               </Grid>
               <Grid size={12}>
                 <TextField
-                  fullWidth
-                  multiline
-                  rows={10}
-                  label="Catatan"
+                  fullWidth multiline rows={3} label="Catatan"
                   value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   placeholder="Catatan tambahan (opsional)"
-                  sx={{ '& textarea': { resize: 'none' } }}
                 />
               </Grid>
             </Grid>
@@ -195,65 +219,138 @@ export default function OrderForm() {
             </Box>
             {errors.items && <Typography variant="body2" color="error" sx={{ mb: 2 }}>{errors.items}</Typography>}
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {items.map((item, idx) => (
-                <Grid container spacing={2} key={idx} alignItems="center">
-                  <Grid size={{ xs: 12, sm: 8 }}>
-                    <FormControl fullWidth size="small" required error={!!errors[`item_${idx}_med`]}>
-                      <InputLabel id={`medicine-select-label-${idx}`}>Pilih Obat</InputLabel>
-                      <Select
-                        fullWidth
-                        labelId={`medicine-select-label-${idx}`}
-                        value={item.medicineId}
-                        label="Pilih Obat"
-                        onChange={e => updateItem(idx, 'medicineId', e.target.value)}
-                      >
-                        <MenuItem value="">Pilih obat</MenuItem>
-                        {medicines.map(m => (
-                          <MenuItem key={m.id} value={m.id} disabled={m.stock === 0}>
-                            {getMedicineLabel(m)}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors[`item_${idx}_med`] && <Typography variant="caption" color="error">{errors[`item_${idx}_med`]}</Typography>}
-                    </FormControl>
-                  </Grid>
-                  <Grid size={{ xs: 10, sm: 3 }}>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Jumlah"
-                      size="small"
-                      value={item.quantityRequested}
-                      onChange={e => updateItem(idx, 'quantityRequested', parseInt(e.target.value) || 1)}
-                      inputProps={{ min: 1 }}
-                      required
-                      error={!!errors[`item_${idx}_qty`]}
-                      helperText={errors[`item_${idx}_qty`]}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 2, sm: 1 }} sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <IconButton
-                      color="error"
-                      onClick={() => removeItem(idx)}
-                      disabled={items.length === 1}
-                      title="Hapus item"
-                      sx={{ mt: { xs: 0, sm: 0.5 } }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Grid>
-                </Grid>
-              ))}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              {items.map((item, idx) => {
+                const selectedMed = item.medicine;
+                const liquid = isLiquid(selectedMed?.unit);
+                return (
+                  <Card key={idx} variant="outlined" sx={{ p: 2, bgcolor: 'action.hover' }}>
+                    <Grid container spacing={2} alignItems="flex-start">
+                      {/* Medicine Autocomplete */}
+                      <Grid size={{ xs: 12, sm: liquid ? 6 : 8 }}>
+                        <Autocomplete
+                          id={`medicine-autocomplete-${idx}`}
+                          options={medicines}
+                          value={selectedMed}
+                          onChange={(_, newVal) => handleMedicineSelect(idx, newVal)}
+                          getOptionLabel={(opt) => opt ? `${opt.name} (${opt.unit})` : ''}
+                          isOptionEqualToValue={(opt, val) => opt.id === val?.id}
+                          getOptionDisabled={(opt) => opt.stock === 0}
+                          filterOptions={(opts, { inputValue }) => {
+                            const q = inputValue.toLowerCase();
+                            return opts.filter(o =>
+                              o.name.toLowerCase().includes(q) ||
+                              o.code.toLowerCase().includes(q) ||
+                              (o.category || '').toLowerCase().includes(q)
+                            );
+                          }}
+                          renderOption={(props, opt) => (
+                            <Box component="li" {...props} key={opt.id}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                                <MedicalServicesIcon sx={{ fontSize: 16, color: 'text.disabled', flexShrink: 0 }} />
+                                <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                                    {opt.name}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                    {opt.code} · {opt.unit} · {opt.category}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+                                  <Typography variant="caption" sx={{ color: getStockColor(opt), fontWeight: 700 }}>
+                                    Stok: {opt.stock}
+                                  </Typography>
+                                  {opt.stock === 0 && (
+                                    <Chip label="Habis" size="small" color="error" sx={{ height: 16, fontSize: 10 }} />
+                                  )}
+                                  {opt.stock > 0 && opt.stock <= opt.minStock && (
+                                    <Chip label="Rendah" size="small" color="warning" sx={{ height: 16, fontSize: 10 }} />
+                                  )}
+                                </Box>
+                              </Box>
+                            </Box>
+                          )}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Cari Obat"
+                              size="small"
+                              required
+                              error={!!errors[`item_${idx}_med`]}
+                              helperText={errors[`item_${idx}_med`] || (selectedMed ? `Stok: ${selectedMed.stock} ${selectedMed.unit}` : 'Ketik nama atau kode obat')}
+                              placeholder="Ketik nama, kode, atau kategori..."
+                              slotProps={{
+                                input: {
+                                  ...params.InputProps,
+                                  startAdornment: (
+                                    <>
+                                      {selectedMed && selectedMed.stock <= selectedMed.minStock && selectedMed.stock > 0 && (
+                                        <WarningAmberIcon sx={{ color: 'warning.main', fontSize: 18, mr: 0.5 }} />
+                                      )}
+                                      {params.InputProps.startAdornment}
+                                    </>
+                                  ),
+                                }
+                              }}
+                            />
+                          )}
+                          noOptionsText="Obat tidak ditemukan"
+                          loadingText="Memuat..."
+                        />
+                      </Grid>
+
+                      {/* Custom volume for liquid medicines */}
+                      {liquid && (
+                        <Grid size={{ xs: 12, sm: 2 }}>
+                          <TextField
+                            fullWidth
+                            type="number"
+                            label={`Volume (${selectedMed.unit})`}
+                            size="small"
+                            value={item.customVolume}
+                            onChange={e => updateItem(idx, 'customVolume', e.target.value)}
+                            placeholder={selectedMed.unitValue ? String(selectedMed.unitValue) : '0'}
+                            helperText={selectedMed.unitValue ? `Default: ${selectedMed.unitValue}${selectedMed.unit}` : 'Opsional'}
+                            inputProps={{ step: '0.01', min: 0 }}
+                          />
+                        </Grid>
+                      )}
+
+                      {/* Quantity */}
+                      <Grid size={{ xs: 10, sm: liquid ? 3 : 3 }}>
+                        <TextField
+                          fullWidth type="number" label={liquid ? `Jumlah (${selectedMed?.unit || 'unit'})` : 'Jumlah'} size="small"
+                          value={item.quantityRequested}
+                          onChange={e => updateItem(idx, 'quantityRequested', parseInt(e.target.value) || 1)}
+                          inputProps={{ min: 1 }}
+                          required
+                          error={!!errors[`item_${idx}_qty`]}
+                          helperText={errors[`item_${idx}_qty`]}
+                        />
+                      </Grid>
+
+                      {/* Delete button */}
+                      <Grid size={{ xs: 2, sm: 1 }} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', pt: 0.5 }}>
+                        <IconButton
+                          color="error"
+                          onClick={() => removeItem(idx)}
+                          disabled={items.length === 1}
+                          title="Hapus item"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Grid>
+                    </Grid>
+                  </Card>
+                );
+              })}
             </Box>
           </CardContent>
         </Card>
 
         {/* Submit Actions */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-          <Button variant="outlined" onClick={() => navigate(-1)}>
-            Batal
-          </Button>
+          <Button variant="outlined" onClick={() => navigate(-1)}>Batal</Button>
           <Button type="submit" variant="contained" size="large" startIcon={<SaveIcon />} disabled={loading}>
             {loading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Buat Order'}
           </Button>

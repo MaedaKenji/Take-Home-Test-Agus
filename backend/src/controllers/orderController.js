@@ -3,6 +3,7 @@ const { Sequelize } = require('sequelize');
 const { sequelize, Order, OrderItem, Medicine } = require('../models');
 const { generateOrderNumber } = require('../utils/orderNumberGenerator');
 const AppError = require('../utils/AppError');
+const { orderQueue } = require('../utils/queue');
 
 // Valid status transitions
 const VALID_TRANSITIONS = {
@@ -229,6 +230,16 @@ exports.updateStatus = async (req, res, next) => {
 
     await order.update({ status }, { transaction: t });
     await t.commit();
+
+    // Emit order status change event to BullMQ for audit trail
+    await orderQueue.add('status-changed', {
+      event: 'order.statusChanged',
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      from: order.status,
+      to: status,
+      timestamp: new Date().toISOString(),
+    }).catch((err) => console.error('[BullMQ] Failed to enqueue order event:', err.message));
 
     const updated = await Order.findByPk(order.id, {
       include: [{ model: OrderItem, as: 'items', include: [{ model: Medicine, as: 'medicine' }] }],

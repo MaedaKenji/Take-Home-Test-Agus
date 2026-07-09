@@ -3,11 +3,9 @@ name: 🚀 Deploy to VM
 on:
   push:
     branches:
+      - main
       - staging
   workflow_dispatch:   # Bisa dipicu manual dari GitHub UI
-
-env:
-  APP_DIR: ~/pharmacy-app-staging   # Direktori aplikasi di VM
 
 jobs:
   # ─────────────────────────────────────────────
@@ -22,7 +20,27 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v7.0.0
 
-      # 2. SSH ke VM dan deploy dengan Docker Compose
+      # 2. Tentukan target environment & setting variable
+      - name: 🛠️ Set Environment Variables
+        id: setup_env
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "ENV_NAME=production" >> $GITHUB_ENV
+            echo "APP_DIR=~/pharmacy-app" >> $GITHUB_ENV
+            echo "RESET_BRANCH=main" >> $GITHUB_ENV
+            echo "HEALTH_PORT=5000" >> $GITHUB_ENV
+            echo "COMPOSE_FILES=-f docker-compose.yml" >> $GITHUB_ENV
+            echo "TUNNEL_TOKEN_SECRET_NAME=CLOUDFLARE_TUNNEL_TOKEN" >> $GITHUB_ENV
+          else
+            echo "ENV_NAME=staging" >> $GITHUB_ENV
+            echo "APP_DIR=~/pharmacy-app-staging" >> $GITHUB_ENV
+            echo "RESET_BRANCH=staging" >> $GITHUB_ENV
+            echo "HEALTH_PORT=5001" >> $GITHUB_ENV
+            echo "COMPOSE_FILES=-f docker-compose.yml -f docker-compose.staging.yml" >> $GITHUB_ENV
+            echo "TUNNEL_TOKEN_SECRET_NAME=CLOUDFLARE_TUNNEL_TOKEN_STAGING" >> $GITHUB_ENV
+          fi
+
+      # 3. SSH ke VM dan deploy dengan Docker Compose
       - name: 🚀 Deploy ke VM
         uses: appleboy/ssh-action@v1.2.5
         with:
@@ -33,7 +51,7 @@ jobs:
           script: |
             set -e
 
-            echo "📁 Menyiapkan direktori aplikasi..."
+            echo "📁 Menyiapkan direktori aplikasi (${{ env.ENV_NAME }})..."
             mkdir -p ${{ env.APP_DIR }}
             cd ${{ env.APP_DIR }}
 
@@ -44,21 +62,30 @@ jobs:
             else
               echo "🔄 Pull perubahan terbaru..."
               git fetch origin
-              git reset --hard origin/staging
+              git reset --hard origin/${{ env.RESET_BRANCH }}
             fi
 
             # Buat .env dari GitHub Secrets
             echo "⚙️  Membuat file .env..."
+            # Resolving Cloudflare token dynamically based on target env
+            if [ "${{ env.ENV_NAME }}" = "production" ]; then
+              TUNNEL_TOKEN="${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}"
+            else
+              TUNNEL_TOKEN="${{ secrets.CLOUDFLARE_TUNNEL_TOKEN_STAGING }}"
+            fi
+
             cat > .env << EOF
             DB_HOST=db
             DB_PORT=5432
             DB_NAME=${{ secrets.DB_NAME }}
             DB_USER=${{ secrets.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            NODE_ENV=production
+            NODE_ENV=${{ env.ENV_NAME }}
             PORT=5000
             CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
-            CLOUDFLARE_TUNNEL_TOKEN_STAGING=${{ secrets.CLOUDFLARE_TUNNEL_TOKEN_STAGING }}
+            CLOUDFLARE_TUNNEL_TOKEN=$TUNNEL_TOKEN
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            REDIS_URL=redis://redis:6379
             EOF
 
             # Auto-fix: pastikan user punya akses Docker
@@ -69,24 +96,24 @@ jobs:
               echo "✅ User ditambahkan ke grup docker"
               # Jalankan docker compose dalam sesi group baru tanpa perlu re-login
               echo "🐳 Membangun ulang dan menjalankan container..."
-              sudo docker compose down --remove-orphans
-              sudo docker compose up -d --build
+              sudo docker compose ${{ env.COMPOSE_FILES }} down --remove-orphans
+              sudo docker compose ${{ env.COMPOSE_FILES }} up -d --build
             else
               echo "✅ Akses Docker OK"
               echo "🐳 Membangun ulang dan menjalankan container..."
-              docker compose down --remove-orphans
-              docker compose up -d --build
+              docker compose ${{ env.COMPOSE_FILES }} down --remove-orphans
+              docker compose ${{ env.COMPOSE_FILES }} up -d --build
             fi
 
             echo "⏳ Menunggu container sehat..."
             sleep 15
 
             echo "✅ Status container:"
-            docker compose ps || sudo docker compose ps
+            docker compose ${{ env.COMPOSE_FILES }} ps || sudo docker compose ${{ env.COMPOSE_FILES }} ps
 
             echo "🎉 Deployment selesai!"
 
-      # 3. Verifikasi health check aplikasi
+      # 4. Verifikasi health check aplikasi
       - name: 🔍 Health Check
         uses: appleboy/ssh-action@v1.2.5
         with:
@@ -97,13 +124,13 @@ jobs:
           script: |
             echo "🏥 Menjalankan health check..."
             sleep 5
-            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/health || echo "000")
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.HEALTH_PORT }}/health || echo "000")
             if [ "$RESPONSE" = "200" ]; then
               echo "✅ Health check LULUS — Aplikasi berjalan normal (HTTP $RESPONSE)"
             else
               echo "⚠️  Health check mendapat respons: HTTP $RESPONSE"
               echo "Memeriksa log backend..."
               cd ${{ env.APP_DIR }}
-              docker compose logs --tail=30 backend 2>/dev/null || sudo docker compose logs --tail=30 backend
+              docker compose ${{ env.COMPOSE_FILES }} logs --tail=30 backend 2>/dev/null || sudo docker compose ${{ env.COMPOSE_FILES }} logs --tail=30 backend
               exit 1
             fi

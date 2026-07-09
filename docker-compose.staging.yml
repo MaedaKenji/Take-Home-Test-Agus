@@ -1,0 +1,32 @@
+services:
+  db:
+    container_name: pharmacy_db_staging
+    volumes:
+      - postgres_data_staging:/var/lib/postgresql
+    ports:
+      - "5433:5432"
+
+  redis:
+    container_name: pharmacy_redis_staging
+    ports:
+      - "6380:6379"
+
+  backend:
+    container_name: pharmacy_backend_staging
+    ports:
+      - "5001:5000"
+
+  frontend:
+    container_name: pharmacy_frontend_staging
+    ports:
+      - "8080:80"
+
+  cloudflared:
+    container_name: pharmacy_cloudflared_staging
+
+volumes:
+  postgres_data_staging:
+
+networks:
+  default:
+    name: pharmacy_network_staging
