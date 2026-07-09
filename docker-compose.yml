@@ -21,7 +21,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: pharmacy_backend
+    container_name: pharmacy_backend_staging
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -38,7 +38,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:5000/health || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:5000/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -48,7 +48,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: pharmacy_frontend
+    container_name: pharmacy_frontend_staging
     restart: unless-stopped
     ports:
       - "80:80"
@@ -58,7 +58,7 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:1885-86fccede6d14
-    container_name: pharmacy_cloudflared
+    container_name: pharmacy_cloudflared_staging
     restart: unless-stopped
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
 
