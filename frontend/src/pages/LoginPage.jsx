@@ -189,7 +189,7 @@ export default function LoginPage() {
           </form>
 
           <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mt: 3, color: '#64748b' }}>
-            Sistem dikelola oleh Instalasi Farmasi RSUD
+            
           </Typography>
         </CardContent>
       </Card>

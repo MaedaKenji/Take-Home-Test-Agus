@@ -9,6 +9,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'changeme_super_secret';
  * Attaches decoded user payload to req.user.
  */
 const authenticate = (req, res, next) => {
+  // Bypass OPTIONS preflight requests
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return next(new AppError(401, 'Token autentikasi diperlukan'));
