@@ -44,7 +44,7 @@ jobs:
             else
               echo "🔄 Pull perubahan terbaru..."
               git fetch origin
-              git reset --hard origin/main
+              git reset --hard origin/staging
             fi
 
             # Buat .env dari GitHub Secrets
