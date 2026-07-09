@@ -164,6 +164,9 @@ jobs:
             echo "✅ Status container:"
             docker compose ${{ env.COMPOSE_FILES }} ps
 
+            echo "🌱 Menjalankan database seeder..."
+            docker compose ${{ env.COMPOSE_FILES }} exec -T backend npm run seed || true
+
             echo "🎉 Deployment selesai!"
 
       # 3. Verifikasi health check aplikasi

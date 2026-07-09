@@ -43,8 +43,10 @@ async function start() {
   try {
     await sequelize.authenticate();
     console.log('✅ Database connection established.');
-    await sequelize.sync({ alter: true });
-    console.log('✅ Database synced.');
+    // Only perform schema alter in non-production environments to protect live production data
+    const isProduction = process.env.NODE_ENV === 'production';
+    await sequelize.sync({ alter: !isProduction });
+    console.log(`✅ Database synced (alter: ${!isProduction}).`);
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
     });
