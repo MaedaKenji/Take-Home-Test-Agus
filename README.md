@@ -6,8 +6,8 @@ Aplikasi manajemen pesanan obat dari poli untuk petugas farmasi. Dibangun sebaga
 
 ## 🚀 Demo Aplikasi
 
-> 🎬 **[Tonton Demo di YouTube »](#)**  
-> 🌐 **Aplikasi Live:** `http://<VM_IP>/`
+> 🎬 **[Tonton Demo di YouTube »](https://youtu.be/Mnnw9Slg2kw)**  
+> 🌐 **Aplikasi Live:** [https://syamrabu.agusfuad.my.id/](https://syamrabu.agusfuad.my.id/)
 
 ---
 
@@ -164,7 +164,7 @@ Isi minimal yang perlu disesuaikan:
 DB_NAME=pharmacy_db
 DB_USER=pharmacy_user
 DB_PASSWORD=ganti_dengan_password_aman
-CORS_ORIGIN=http://<IP_VM_ANDA>
+CORS_ORIGIN=https://syamrabu.agusfuad.my.id
 ```
 
 #### 4. Jalankan dengan Docker Compose
@@ -186,7 +186,39 @@ docker compose exec backend npm run seed
 
 #### 6. Akses Aplikasi
 
-Buka browser ke: `http://<IP_VM_ANDA>`
+Buka browser ke: [https://syamrabu.agusfuad.my.id/](https://syamrabu.agusfuad.my.id/)
+
+---
+
+## 🚀 Deployment Otomatis (CI/CD via GitHub Actions)
+
+Repositori ini telah dikonfigurasi dengan GitHub Actions untuk mendeploy aplikasi secara otomatis ke VM setiap kali ada push ke branch `main`, `staging`, atau `uji-coba-merge`. 
+
+Agar workflow deployment di [.github/workflows/deploy.yml](file:///.github/workflows/deploy.yml) dapat berjalan dengan sukses, Anda harus menambahkan **GitHub Secrets** berikut di repositori Anda (`Settings` -> `Secrets and variables` -> `Actions` -> `New repository secret`):
+
+### 🔑 Daftar GitHub Secrets yang Diperlukan
+
+| Nama Secret | Deskripsi / Nilai |
+|-------------|-------------------|
+| `DOCKER_USERNAME` | Username akun Docker Hub Anda. |
+| `DOCKER_PASSWORD` | Password atau Personal Access Token Docker Hub Anda. |
+| `VM_HOST` | IP Address VM target deployment. |
+| `VM_USER` | Username untuk koneksi SSH ke VM (misal: `root` atau `ubuntu`). |
+| `VM_SSH_KEY` | SSH Private Key untuk autentikasi ke VM Anda (biasanya isi dari `~/.ssh/id_rsa`). |
+| `VM_PORT` | Port SSH VM (default: `22`). |
+| `DB_NAME` | Nama database PostgreSQL yang akan digunakan di VM (misal: `pharmacy_db`). |
+| `DB_USER` | Username database PostgreSQL (misal: `pharmacy_user`). |
+| `DB_PASSWORD` | Password database PostgreSQL yang aman. |
+| `CORS_ORIGIN` | URL frontend yang diperbolehkan mengakses API (misal: `https://syamrabu.agusfuad.my.id`). |
+| `JWT_SECRET` | Secret key unik untuk kebutuhan enkripsi JWT token di backend. |
+| `CLOUDFLARE_TUNNEL_TOKEN` | Token Cloudflare Tunnel untuk env `production` (jika menggunakan Cloudflare Tunnel). |
+| `CLOUDFLARE_TUNNEL_TOKEN_STAGING` | Token Cloudflare Tunnel untuk env `staging` (jika menggunakan Cloudflare Tunnel). |
+
+### 🔄 Alur Kerja CI/CD
+1. **Push Kode**: Setiap kali Anda melakukan `git push` ke branch `main` atau `staging`.
+2. **Build & Push**: GitHub Actions akan mem-build Docker image untuk backend & frontend dan meng-upload-nya ke Docker Hub.
+3. **Deploy via SSH**: GitHub Actions akan login ke VM menggunakan SSH, mengunduh image terbaru dari Docker Hub, memperbarui konfigurasi `.env`, dan merestart container menggunakan Docker Compose.
+4. **Health Check**: Melakukan uji koneksi ke port aplikasi untuk memastikan aplikasi berjalan dengan baik setelah deployment.
 
 ---
 
@@ -238,7 +270,7 @@ Semua service terhubung dalam Docker network bernama `pharmacy_network`.
 
 ### Base URL
 - **Development:** `http://localhost:5000/api`
-- **Production:** `http://<IP_VM>/api`
+- **Production:** `https://syamrabu.agusfuad.my.id/api`
 
 ### 💊 Obat (Medicines)
 
@@ -446,8 +478,6 @@ Edit `docker-compose.yml`, ubah baris `"80:80"` menjadi port lain:
 ports:
   - "8080:80"
 ```
-
-Lalu akses aplikasi di `http://<IP_VM>:8080`.
 
 ### Data database terhapus
 
