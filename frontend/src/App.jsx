@@ -15,7 +15,7 @@ import OrderDetailPage from './pages/OrderDetailPage';
 import LoginPage from './pages/LoginPage';
 import NotFound from './pages/NotFound';
 
-function ProtectedRoute({ children }) {
+export function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
