@@ -131,62 +131,66 @@ npm run seed
 
 ---
 
-## 🐳 Deployment dengan Docker
+## 🐳 Menjalankan dengan Docker Compose
+
+Docker Compose memungkinkan Anda menjalankan seluruh stack aplikasi (Frontend, Backend, Database, Redis) dengan satu perintah, baik untuk pengujian di komputer lokal (device Anda sendiri) maupun deployment di VM.
 
 ### Prasyarat
 - Docker >= 24.x
 - Docker Compose >= 2.x
 
-### Langkah Deployment
+### Langkah-langkah
 
-#### 1. Clone Repository di VM
-
-```bash
-git clone https://github.com/<username>/Take-Home-Test-Agus.git
-cd Take-Home-Test-Agus
-```
+#### 1. Persiapan Direktori
+* **Di Lokal (Device Sendiri):** Buka terminal pada folder project Anda.
+* **Di VM:** Clone repository terlebih dahulu dan masuk ke foldernya:
+  ```bash
+  git clone https://github.com/<username>/Take-Home-Test-Agus.git
+  cd Take-Home-Test-Agus
+  ```
 
 #### 2. Buat file `.env` dari template
-
 ```bash
 cp .env.example .env
 ```
 
-#### 3. Edit `.env` sesuai kebutuhan
+#### 3. Edit `.env` sesuai target environment
+Buka file `.env` dan sesuaikan variabel `CORS_ORIGIN`:
 
-```bash
-nano .env
-```
+* **Opsi A: Jika dijalankan di Lokal (Device Sendiri)**
+  ```env
+  DB_NAME=pharmacy_db
+  DB_USER=pharmacy_user
+  DB_PASSWORD=ganti_dengan_password_aman
+  CORS_ORIGIN=http://localhost
+  ```
 
-Isi minimal yang perlu disesuaikan:
-
-```env
-DB_NAME=pharmacy_db
-DB_USER=pharmacy_user
-DB_PASSWORD=ganti_dengan_password_aman
-CORS_ORIGIN=https://syamrabu.agusfuad.my.id
-```
+* **Opsi B: Jika dijalankan di VM (Production Server)**
+  ```env
+  DB_NAME=pharmacy_db
+  DB_USER=pharmacy_user
+  DB_PASSWORD=ganti_dengan_password_aman
+  CORS_ORIGIN=https://syamrabu.agusfuad.my.id
+  ```
 
 #### 4. Jalankan dengan Docker Compose
-
 ```bash
 docker compose up -d --build
 ```
 
 Docker Compose akan secara otomatis:
 - Membangun image frontend (React + Nginx) dan backend (Express.js)
-- Menjalankan container PostgreSQL dengan healthcheck
+- Menjalankan container PostgreSQL & Redis dengan healthcheck
 - Menunggu database siap sebelum menjalankan backend
 
 #### 5. Seed Data Awal (Opsional)
-
 ```bash
 docker compose exec backend npm run seed
 ```
 
 #### 6. Akses Aplikasi
-
-Buka browser ke: [https://syamrabu.agusfuad.my.id/](https://syamrabu.agusfuad.my.id/)
+* **Di Lokal:** Buka browser ke [http://localhost](http://localhost)
+* **Di VM:** Buka browser ke [https://syamrabu.agusfuad.my.id/](https://syamrabu.agusfuad.my.id/)
 
 ---
 
